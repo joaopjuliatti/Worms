@@ -7,6 +7,8 @@ document.getElementById('game-board').appendChild(globalCanvas);
 const globalContex1 = globalCanvas.getContext('2d');
 
 
+
+//GAME GENERAL
 class Game{
     constructor(canvas){
         this.canvas = canvas;
@@ -16,7 +18,7 @@ class Game{
         this.atomization = 500
         this.playerWidth = 20
         this.playerHeigth = 40
-        this.gravity = 0.05
+        this.gravity = 0.1
     }
     start = () =>{
         this.player = new Player(this.playerInitX,this.playerInitY,0,0,this.playerWidth,this.playerHeigth,this.canvas)
@@ -30,20 +32,34 @@ class Game{
     updateGame = () =>{
         this.clear()
         this.gameArea.drawGameArea()
-        this.player.drawPlayer(0,this.gravity)
-
+        if(this.checkIfTouch(this.player)){
+            this.player.y = this.player.previousY
+            if(Math.abs(this.player.Vy)<2){
+                this.player.Vy=0;
+            }
+            else {
+                this.player.Vy = -this.player.Vy*0.5
+            }
+        }
+        else{
+            this.player.drawPlayer(0,this.gravity)
+        }
+        console.log(this.player.y)
     }
     interval = () =>{
-        setInterval(this.updateGame,20)
+        setInterval(this.updateGame,2)
     }
-    checkGroundOrTop = () =>{
-        return this.gameArea.terrains.reduce((acc,terrain)=>{
-            return acc || terrain.checkIfTouch(this.player)
-        },false)
+    checkIfTouch = (player) =>{
+        const teste =this.gameArea.terrains.reduce((acc,terrain)=>{
+            return acc || terrain.checkGroundOrTop(player)
+        },false) 
+        return teste
     }   
     
 }
 
+
+//MAP TERRAIN AND BACKGROUND
 class GameArea{
     constructor(canvas,initY,atomization){
         this.canvas = canvas;
@@ -74,11 +90,13 @@ class GameArea{
 
 
 
-
+//BASE FOR ANY PIECE
 class Component{
     constructor(x,y,Vx,Vy,width,height,canvas){
         this.x = x;
         this.y = y;
+        this.previousX = x;
+        this.previousY = y;
         this.Vx = Vx;
         this.Vy = Vy;
         this.ax = 0;
@@ -87,10 +105,18 @@ class Component{
         this.height = height;
         this.canvas = canvas;
         this.contex = canvas.getContext('2d')
-        this.left = this.x;
-        this.right = this.x+this.width
-        this.top = this.y
-        this.bottom = this.y+ this.height
+    }
+    left = () =>{
+        return this.x;
+    }
+    right = () =>{
+        return this.x+this.width
+    }
+    top = () =>{
+        return this.y
+    }
+    bottom = () =>{
+        return this.y+ this.height
     }
 }
 
@@ -103,10 +129,10 @@ class Terrain extends Component{
         this.contex.fillStyle = 'yellow'
         this.contex.fillRect(this.x,this.y,this.width,this.height);
     }
-    checkIfTouch = (player) =>{
+    checkGroundOrTop = (player) =>{
         return (
-          player.top() > this.bottom() ||
-          player.bottom() < this.top()
+            ( player.bottom() > this.top() && player.bottom() < this.bottom())||
+            ( player.top() < this.bottom() && this.top() < player.top() )
         )  
       }
 }
@@ -121,23 +147,25 @@ class Player extends Component{
         this.drawPlayer(0,0)
     }
     drawPlayer = (ax,ay) =>{
-        this.newAceleration(ax,ay)
+        this.newPos(ax,ay)
         this.contex.fillStyle = 'red'
         this.contex.fillRect(this.x,this.y,this.width,this.height);   
     }
-    newPos = () =>{
+    newPos = (ax,ay) =>{
+        this.previousX = this.x
+        this.previousY = this.y
         this.x += this.Vx
         this.y += this.Vy
+        this.newVelocity(ax,ay)
     }
-    newVelocity = () =>{
+    newVelocity = (ax,ay) =>{
         this.Vx += this.ax
         this.Vy += this.ay
-        this.newPos()  
+        this.newAceleration(ax,ay)
     }
     newAceleration = (ax,ay) =>{
         this.ay = ay;
         this.ax = ax;
-        this.newVelocity()
     }
 
 }
