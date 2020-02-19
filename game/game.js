@@ -19,6 +19,7 @@ class Game{
         this.playerWidth = 20
         this.playerHeigth = 40
         this.gravity = 0.1
+        this.drag = 0.1
     }
     start = () =>{
         this.player = new Player(this.playerInitX,this.playerInitY,0,0,this.playerWidth,this.playerHeigth,this.canvas)
@@ -32,8 +33,16 @@ class Game{
     updateGame = () =>{
         this.clear()
         this.gameArea.drawGameArea()
-        if(this.checkIfTouch(this.player)){
+        if(this.checkIfTouchY(this.player)){
             this.player.y = this.player.previousY
+
+            if(Math.abs(this.player.Vx)>1){
+                this.player.Vx = this.player.Vx - Math.sign(this.player.Vx)*this.drag 
+            }
+            else{
+                this.player.Vx=0
+            }
+
             if(Math.abs(this.player.Vy)<2){
                 this.player.Vy=0;
             }
@@ -44,12 +53,11 @@ class Game{
         else{
             this.player.drawPlayer(0,this.gravity)
         }
-        console.log(this.player.y)
     }
     interval = () =>{
         setInterval(this.updateGame,2)
     }
-    checkIfTouch = (player) =>{
+    checkIfTouchY = (player) =>{
         const teste =this.gameArea.terrains.reduce((acc,terrain)=>{
             return acc || terrain.checkGroundOrTop(player)
         },false) 
@@ -194,14 +202,6 @@ document.onkeydown = function(e){
   }
 
   document.onkeyup = (e) =>{
-    switch (e.keyCode) {
-        case 37:
-          game.player.Vx = 0
-          break;
-        case 39:
-          game.player.Vx = 0
-          break;      
-      }
       
   }
 
