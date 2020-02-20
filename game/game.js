@@ -1,3 +1,22 @@
+//player movement
+map = {}
+document.onkeydown = function(e){
+    map[e.keyCode] = e.type =='keydown'
+    console.log(map)
+    if(map[37]) game.player.Vx=-1
+    if(map[39]) game.player.Vx= 1
+    if(map[32]) game.player.Vy=-2
+  }
+  document.onkeyup = function(e){
+    map[e.keyCode] = e.type =='keydown'
+    console.log(map)
+    if(map[37]) game.player.Vx=-1
+    if(map[39]) game.player.Vx= 1
+    if(map[32]) game.player.Vy=-2
+}
+
+
+
 //Initialization canvas and contex
 const globalCanvas = document.createElement('canvas');
 globalCanvas.width = 1000;
@@ -19,7 +38,7 @@ class Game{
         this.playerWidth = 20
         this.playerHeigth = 40
         this.gravity = 0.1
-        this.drag = 0.4
+        this.drag = 0.1
     }
     start = () =>{
         this.player = new Player(this.playerInitX,this.playerInitY,0,0,this.playerWidth,this.playerHeigth,this.canvas)
@@ -31,14 +50,18 @@ class Game{
         this.contex.clearRect(0,0,this.canvas.width,this.canvas.height)
     }
     updateGame = () =>{
+        if(map[37]) game.player.Vx=-1
+        if(map[39]) game.player.Vx= 1
+        if(map[32]) game.player.Vy=-2
         this.clear()
         this.gameArea.drawGameArea()
         this.player.newPos(0,this.gravity)
         if(this.checkIfTouchY(this.player)){
             this.player.y = this.player.previousY
 
-            if(Math.abs(this.player.Vx)>1){
-                this.player.Vx = this.player.Vx - Math.sign(this.player.Vx)*this.drag 
+            if(Math.abs(this.player.Vx)>0.5){
+                this.player.Vx = this.player.Vx - Math.sign(this.player.Vx)*this.drag
+                console.log(this.player.Vx)
             }
             else{
                 this.player.Vx=0
@@ -186,24 +209,7 @@ game.interval()
 
 
 
-//player movement
-document.onkeydown = function(e){
-    switch (e.keyCode) {
-      case 37:
-        game.player.Vx=-5
-        break;
-      case 39:
-        game.player.Vx=+5
-        break;
-    case 32:
-        game.player.Vy=-2
-        break;     
-    }
-  }
 
-  document.onkeyup = (e) =>{
-      
-  }
 
 
 
