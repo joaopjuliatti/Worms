@@ -24,8 +24,6 @@ class Game{
     constructor(canvas){
         this.canvas = canvas;
         this.contex = canvas.getContext('2d');
-        this.playerInitX = 0
-        this.playerInitY = 400
         this.atomization = 500
         this.playerWidth = 20
         this.playerHeigth = 40
@@ -33,67 +31,94 @@ class Game{
         this.drag = 0.1
         this.frames = 0;
         this.turn = 1
+        this.teams = ['red','blue']
+        this.worms = []
+
+        this.playerInitX = [0,900]
+        this.playerInitY = 400
     }
     start = () =>{
-        this.player = new Player(this.playerInitX,this.playerInitY,0,0,this.playerWidth,this.playerHeigth,this.canvas)
         this.gameArea = new GameArea(this.canvas,this.playerInitY+this.playerHeigth,500)
         this.gameArea.start()
-        this.player.start()
+        this.startWorms()
+        this.drawTurnTime()
+    }
+
+    startWorms = () =>{
+        for(let i =0;i<this.teams.length;i++){
+            this.worms.push(new Worm(this.playerInitX[i],this.playerInitY,0,0,this.playerWidth,this.playerHeigth,this.teams[i],this.canvas))
+            this.worms[i].start()
+        }
+        this.indWormInUse = Math.random()*this.worms.length
+        this.wormInUse = this.worms[this.indWormInUse]
+    }
+    drawWorms = () =>{
+        for(let i =0;i<this.worms.length;i++){
+            this.worms[i].drawWorm()
+        }
     }
     clear = () =>{
         this.contex.clearRect(0,0,this.canvas.width,this.canvas.height)
     }
     keysPressed = () =>{
-        if(keysUsed[37]) game.player.Vx=-1
-        if(keysUsed[39]) game.player.Vx= 1
-        if(keysUsed[32]) game.player.Vy=-2
-        if(keysUsed[90]) game.player.attack()
+        if(keysUsed[37]) this.wormInUse.moveLeft()
+        if(keysUsed[39]) this.wormInUse.moveRight()
+        if(keysUsed[32]) this.wormInUse.jump()
+        if(keysUsed[90]) this.wormInUse.attack()
     }
     updateGame = () =>{
-        console.log(this.frames)
-        if(this.frames % 300 === 0 )
+        if(this.frames % 600 === 0)
             this.passTurn()
         this.clear()
         this,this.keysPressed()
         this.gameArea.drawGameArea()
-        this.player.newPos(0,this.gravity)
-        if(this.checkIfTouchY(this.player)){
-            this.player.y = this.player.previousY
+        this.wormInUse.newPos(0,this.gravity)
+        if(this.checkIfTouchY(this.wormInUse)){
+            this.wormInUse.y = this.wormInUse.previousY
 
-            if(Math.abs(this.player.Vx)>0.5){
-                this.player.Vx = this.player.Vx - Math.sign(this.player.Vx)*this.drag
-                console.log(this.player.Vx)
+            if(Math.abs(this.wormInUse.Vx)>0.5){
+                this.wormInUse.Vx = this.wormInUse.Vx - Math.sign(this.wormInUse.Vx)*this.drag
             }
             else{
-                this.player.Vx=0
+                this.wormInUse.Vx=0
             }
 
-            if(Math.abs(this.player.Vy)<2){
-                this.player.Vy=0;
+            if(Math.abs(this.wormInUse.Vy)<2){
+                this.wormInUse.Vy=0;
             }
             else {
-                this.player.Vy = -this.player.Vy*0.5
+                this.wormInUse.Vy = -this.wormInUse.Vy*0.5
             }
         }
-
-        this.player.drawPlayer()
+        this.drawWorms()
         this.frames++
+        this.drawTurnTime()
     }
     interval = () =>{
         setInterval(this.updateGame,1)
     }
-    checkIfTouchY = (player) =>{
+    checkIfTouchY = (worm) =>{
         const teste =this.gameArea.terrains.reduce((acc,terrain)=>{
-            return acc || terrain.checkGroundOrTop(player)
+            return acc || terrain.checkGroundOrTop(worm)
         },false) 
         return teste
     }
     passTurn = () =>{
         this.turn++
+        this.nextWorm()
         this.frames = 0
-        this.player.beginTurn()
+        this.wormInUse.beginTurn()
     }   
-    
+    nextWorm = () =>{
+        this.indWormInUse ++
+        if(this.indWormInUse>=this.worms.length) this.indWormInUse = 0
+        this.wormInUse = this.worms[this.indWormInUse]
+    }
+    drawTurnTime = () =>{
+        this.contex.font = '30px Arial'
+        this.contex.fillText(`${this.frames/100}`,400,100)
+
+    }
 }
 
 
@@ -185,34 +210,50 @@ class Terrain extends Component{
         this.contex.fillStyle = 'yellow'
         this.contex.fillRect(this.x,this.y,this.width,this.height);
     }
-    checkGroundOrTop = (player) =>{
+    checkGroundOrTop = (worm) =>{
         return (
-            ( player.bottom() > this.top() && player.bottom() < this.bottom())||
-            ( player.top() < this.bottom() && this.top() < player.top() )
+            ( worm.bottom() > this.top() && worm.bottom() < this.bottom())||
+            ( worm.top() < this.bottom() && this.top() < worm.top() )
         )  
       }
 }
 
 
-class Player extends Component{
-    constructor(x,y,Vx,Vy,width,height,canvas){
+class Worm extends Component{
+    constructor(x,y,Vx,Vy,width,height,team,canvas){
         super(x,y,Vx,Vy,width,height,canvas);
         this.bullets = [];
         this.gravity = 0.1
         this.numberBullets = 3
+        this.jumps = 2
+        this.team = team
+        this.front = 'right'
     }
     start = () =>{
         this.newPos(0,0)
-        this.drawPlayer()
+        this.drawWorm()
     }
-    drawPlayer = () =>{
-        this.contex.fillStyle = 'red'
+    drawWorm = () =>{
+        this.contex.fillStyle = this.team
         this.contex.fillRect(this.x,this.y,this.width,this.height);
         this.frames++;   
         this.drawBullets()  
     }
+    jump = () =>{
+        if(this.jumps>0){
+            this.Vy -= 1.5
+            this.jumps--
+        }
+    }
+    moveRight =() =>{
+
+
+    }
+    moveLeft =() =>{
+
+        
+    }
     attack = () =>{
-        console.log(this.frames)
         if(this.frames % 50 ===0 && this.numberBullets>0){
             this.bullets.push(new Bullet(this.x,this.y,10,-2,20,10,this.canvas))
             this.numberBullets--
@@ -228,6 +269,7 @@ class Player extends Component{
         this.frames = 0;
         this.bullets =[];
         this.numberBullets=3;
+        this.jumps = 2
     }
 
 }
@@ -248,10 +290,3 @@ game = new Game(globalCanvas)
 game.start()
 
 game.interval()
-
-
-
-
-
-
-
