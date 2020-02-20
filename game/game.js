@@ -19,7 +19,7 @@ class Game{
         this.playerWidth = 20
         this.playerHeigth = 40
         this.gravity = 0.1
-        this.drag = 0.1
+        this.drag = 0.4
     }
     start = () =>{
         this.player = new Player(this.playerInitX,this.playerInitY,0,0,this.playerWidth,this.playerHeigth,this.canvas)
@@ -33,6 +33,7 @@ class Game{
     updateGame = () =>{
         this.clear()
         this.gameArea.drawGameArea()
+        this.player.newPos(0,this.gravity)
         if(this.checkIfTouchY(this.player)){
             this.player.y = this.player.previousY
 
@@ -50,9 +51,8 @@ class Game{
                 this.player.Vy = -this.player.Vy*0.5
             }
         }
-        else{
-            this.player.drawPlayer(0,this.gravity)
-        }
+
+        this.player.drawPlayer()
     }
     interval = () =>{
         setInterval(this.updateGame,2)
@@ -152,10 +152,10 @@ class Player extends Component{
         super(x,y,Vx,Vy,width,height,canvas);
     }
     start = () =>{
-        this.drawPlayer(0,0)
+        this.newPos(0,0)
+        this.drawPlayer()
     }
-    drawPlayer = (ax,ay) =>{
-        this.newPos(ax,ay)
+    drawPlayer = () =>{
         this.contex.fillStyle = 'red'
         this.contex.fillRect(this.x,this.y,this.width,this.height);   
     }
