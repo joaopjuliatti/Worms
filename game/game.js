@@ -31,6 +31,8 @@ class Game{
         this.playerHeigth = 40
         this.gravity = 0.1
         this.drag = 0.1
+        this.frames = 0;
+        this.turn = 1
     }
     start = () =>{
         this.player = new Player(this.playerInitX,this.playerInitY,0,0,this.playerWidth,this.playerHeigth,this.canvas)
@@ -48,6 +50,9 @@ class Game{
         if(keysUsed[90]) game.player.attack()
     }
     updateGame = () =>{
+        console.log(this.frames)
+        if(this.frames % 300 === 0 )
+            this.passTurn()
         this.clear()
         this,this.keysPressed()
         this.gameArea.drawGameArea()
@@ -72,6 +77,7 @@ class Game{
         }
 
         this.player.drawPlayer()
+        this.frames++
     }
     interval = () =>{
         setInterval(this.updateGame,1)
@@ -81,6 +87,11 @@ class Game{
             return acc || terrain.checkGroundOrTop(player)
         },false) 
         return teste
+    }
+    passTurn = () =>{
+        this.turn++
+        this.frames = 0
+        this.player.beginTurn()
     }   
     
 }
@@ -199,13 +210,12 @@ class Player extends Component{
         this.contex.fillRect(this.x,this.y,this.width,this.height);
         this.frames++;   
         this.drawBullets()  
-        if(this.frames===500) this.frames = 0
     }
     attack = () =>{
         console.log(this.frames)
-        if(this.frames % 50 ===0 && this.bullets>0){
+        if(this.frames % 50 ===0 && this.numberBullets>0){
             this.bullets.push(new Bullet(this.x,this.y,10,-2,20,10,this.canvas))
-            this.bullets--
+            this.numberBullets--
         }
     }
     drawBullets =() =>{
@@ -213,6 +223,11 @@ class Player extends Component{
             this.bullets[i].newPos(0,this.gravity)
             this.bullets[i].drawBullet()
         }
+    }
+    beginTurn(){
+        this.frames = 0;
+        this.bullets =[];
+        this.numberBullets=3;
     }
 
 }
@@ -225,12 +240,7 @@ class Bullet extends Component{
         this.contex.fillStyle = 'pink'
         this.contex.fillRect(this.x,this.y,this.width,this.height);
     }
-    // checkGroundOrTop = (player) =>{
-    //     return (
-    //         ( player.bottom() > this.top() && player.bottom() < this.bottom())||
-    //         ( player.top() < this.bottom() && this.top() < player.top() )
-    //     )  
-    //   }
+
 }
 
 game = new Game(globalCanvas)
