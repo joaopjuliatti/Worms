@@ -37,10 +37,12 @@ class Game{
         this.playerInitX = [0,900]
         this.playerInitY = 400
     }
+
     start = () =>{
         this.gameArea = new GameArea(this.canvas,this.playerInitY+this.playerHeigth,500)
         this.gameArea.start()
         this.startWorms()
+        console.log(this.wormInUse)
         this.drawTurnTime()
     }
 
@@ -49,73 +51,79 @@ class Game{
             this.worms.push(new Worm(this.playerInitX[i],this.playerInitY,0,0,this.playerWidth,this.playerHeigth,this.teams[i],this.canvas))
             this.worms[i].start()
         }
-        this.indWormInUse = Math.random()*this.worms.length
+        this.indWormInUse = Math.floor(Math.random()*this.worms.length)
         this.wormInUse = this.worms[this.indWormInUse]
     }
+
     drawWorms = () =>{
         for(let i =0;i<this.worms.length;i++){
+            this.worms[i].newPos(0,this.gravity)
+            this.checkTouch(this.wor)
             this.worms[i].drawWorm()
         }
     }
+
     clear = () =>{
         this.contex.clearRect(0,0,this.canvas.width,this.canvas.height)
     }
+
     keysPressed = () =>{
         if(keysUsed[37]) this.wormInUse.moveLeft()
         if(keysUsed[39]) this.wormInUse.moveRight()
         if(keysUsed[32]) this.wormInUse.jump()
         if(keysUsed[90]) this.wormInUse.attack()
     }
+
     updateGame = () =>{
-        if(this.frames % 600 === 0)
-            this.passTurn()
+        this.passTurn()
         this.clear()
-        this,this.keysPressed()
+        this.keysPressed()
+        this.touchEffects()
         this.gameArea.drawGameArea()
-        this.wormInUse.newPos(0,this.gravity)
-        if(this.checkIfTouchY(this.wormInUse)){
-            this.wormInUse.y = this.wormInUse.previousY
-
-            if(Math.abs(this.wormInUse.Vx)>0.5){
-                this.wormInUse.Vx = this.wormInUse.Vx - Math.sign(this.wormInUse.Vx)*this.drag
-            }
-            else{
-                this.wormInUse.Vx=0
-            }
-
-            if(Math.abs(this.wormInUse.Vy)<2){
-                this.wormInUse.Vy=0;
-            }
-            else {
-                this.wormInUse.Vy = -this.wormInUse.Vy*0.5
-            }
-        }
         this.drawWorms()
         this.frames++
         this.drawTurnTime()
     }
+
     interval = () =>{
         setInterval(this.updateGame,1)
     }
-    checkIfTouchY = (worm) =>{
-        const teste =this.gameArea.terrains.reduce((acc,terrain)=>{
-            return acc || terrain.checkGroundOrTop(worm)
-        },false) 
+
+    checkIfTouch = (worm) =>{
+        const teste = this.gameArea.terrains.reduce((acc,terrain)=>{
+            const sideTouch = terrain.checkTouch(worm)
+            return [acc[0] && sideTouch[0],acc[1] && sideTouch[1],acc[2] && sideTouch[2],acc[3] &&sideTouch[3]]
+        },[false,false,false,false]) 
         return teste
     }
+
+    touchEffects = ()=>{
+        for(let i = 0;i<this.worms.length;i++){
+            const touchVector = this.checkIfTouch(this.worms[i])
+
+        }
+        if(this.checkIfTouchY(this.wormInUse)){
+        }
+    }
+
     passTurn = () =>{
-        this.turn++
-        this.nextWorm()
-        this.frames = 0
-        this.wormInUse.beginTurn()
-    }   
+        if(this.frames > 600 && !this.wormInUse.isMoving()){
+            this.turn++
+            this.nextWorm()
+            this.frames = 0
+            this.wormInUse.beginTurn()
+        }
+    }
+
     nextWorm = () =>{
         this.indWormInUse ++
         if(this.indWormInUse>=this.worms.length) this.indWormInUse = 0
         this.wormInUse = this.worms[this.indWormInUse]
     }
+
     drawTurnTime = () =>{
-        this.contex.font = '30px Arial'
+        this.contex.font = '30px Arial black'
+        this.contex.fillStyle = this.wormInUse.team
         this.contex.fillText(`${this.frames/100}`,400,100)
 
     }
@@ -131,6 +139,7 @@ class GameArea{
         this.terrains = [];
         this.initY = initY;
     }
+
     start = () =>{
         const widthAtom = this.canvas.width/this.atomization
         const numberRows = (this.canvas.height - this.initY)/widthAtom
@@ -141,6 +150,7 @@ class GameArea{
         }
         this.drawGameArea()
     }
+
     drawGameArea = () =>{
         this.contex.fillStyle = "black"
         this.contex.fillRect(0,0,1000,500);
@@ -171,18 +181,23 @@ class Component{
         this.frames = 0;
         this.gravity = 0;
     }
+
     left = () =>{
         return this.x;
     }
+
     right = () =>{
         return this.x+this.width
     }
+
     top = () =>{
         return this.y
     }
+
     bottom = () =>{
         return this.y+ this.height
     }
+
     newPos = (ax,ay) =>{
         this.previousX = this.x
         this.previousY = this.y
@@ -190,11 +205,13 @@ class Component{
         this.y += this.Vy
         this.newVelocity(ax,ay)
     }
+
     newVelocity = (ax,ay) =>{
         this.Vx += this.ax
         this.Vy += this.ay
         this.newAceleration(ax,ay)
     }
+
     newAceleration = (ax,ay) =>{
         this.ay = ay;
         this.ax = ax;
@@ -206,10 +223,12 @@ class Terrain extends Component{
     constructor(x,y,Vx,Vy,width,height,canvas){
         super(x,y,Vx,Vy,width,height,canvas);
     }
+
     draw = () =>{
         this.contex.fillStyle = 'yellow'
         this.contex.fillRect(this.x,this.y,this.width,this.height);
     }
+
     checkGroundOrTop = (worm) =>{
         return (
             ( worm.bottom() > this.top() && worm.bottom() < this.bottom())||
@@ -224,52 +243,139 @@ class Worm extends Component{
         super(x,y,Vx,Vy,width,height,canvas);
         this.bullets = [];
         this.gravity = 0.1
-        this.numberBullets = 3
-        this.jumps = 2
+        this.numberBullets = 10
+        this.numberJumps = 2
         this.team = team
         this.front = 'right'
     }
+
     start = () =>{
         this.newPos(0,0)
         this.drawWorm()
     }
+
     drawWorm = () =>{
         this.contex.fillStyle = this.team
         this.contex.fillRect(this.x,this.y,this.width,this.height);
         this.frames++;   
         this.drawBullets()  
     }
+
+    beginTurn(){
+        this.frames = 0;
+        this.bullets =[];
+        this.numberBullets=1;
+        this.numberJumps = 2
+    }
+
     jump = () =>{
-        if(this.jumps>0){
+        if(this.numberJumps>0){
             this.Vy -= 1.5
-            this.jumps--
+            this.numberJumps--
         }
     }
+
     moveRight =() =>{
-
-
+        if(this.front ==='right'){
+            this.Vx = 1
+        }else{
+            this.front = 'right'
+        }
     }
+
     moveLeft =() =>{
-
-        
+        if(this.front==='right'){
+            this.front = 'left'
+        }else{
+            this.Vx = -1
+        }
     }
+
     attack = () =>{
         if(this.frames % 50 ===0 && this.numberBullets>0){
-            this.bullets.push(new Bullet(this.x,this.y,10,-2,20,10,this.canvas))
+            if(this.front ==='right'){
+                this.bullets.push(new Bullet(this.x,this.y,10,-2,20,10,this.canvas))
+            }
+            else{
+                this.bullets.push(new Bullet(this.x,this.y,-10,-2,20,10,this.canvas))
+            }
             this.numberBullets--
         }
     }
+
     drawBullets =() =>{
         for(let i = 0;i<this.bullets.length;i++){
             this.bullets[i].newPos(0,this.gravity)
             this.bullets[i].drawBullet()
         }
     }
-    beginTurn(){
-        this.frames = 0;
-        this.bullets =[];
-        this.numberBullets=3;
-        this.jumps = 2
+
+    isMoving =() =>{
+        return this.Vx !==0 || this.Vy !==0
+    }
+
+    touchTop = (drag,coefficientOfLoss) =>{
+        this.y = this.previousY
+
+        if(Math.abs(this.Vx)>0.5){
+            this.Vx = this.Vx - Math.sign(this.Vx)*drag
+        }
+        else{
+            this.Vx=0
+        }
+
+        if(this.Vy>-2){
+            this.Vy=0;
+        }
+        else {
+            this.Vy = -this.Vy*coefficientOfLoss
+        }
+    }
+    touchBottom = (drag,coefficientOfLoss) =>{
+        this.y = this.previousY
+        
+        this.numberJumps = 2;
+
+        if(Math.abs(this.Vx)>0.5){
+            this.Vx = this.Vx - Math.sign(this.Vx)*drag
+        }
+        else{
+            this.Vx=0
+        }
+
+        if(this.Vy<2){
+            this.Vy=0;
+        }
+        else {
+            this.Vy = -this.Vy*coefficientOfLoss
+        }   
+    }
+    touchRight = (coefficientOfLoss) =>{
+        this.x = this.previousX
+        if(this.Vx>1){
+            this.Vy = -this.Vy*coefficientOfLoss
+        }
+
+        else if(this.Vx===1){
+            this.Vy=-0.1;
+        }
+        else{
+            this.Vx=0
+        }
+        
+    }
+    touchLeft = (coefficientOfLoss) =>{
+        this.x = this.previousX
+        if(this.Vx<-1){
+            this.Vy = -this.Vy*coefficientOfLoss
+        }
+
+        else if(this.Vx===-1){
+            this.Vy=-0.1;
+        }
+        else{
+            this.Vx=0
+        }
     }
 
 }
@@ -278,6 +384,7 @@ class Bullet extends Component{
     constructor(x,y,Vx,Vy,width,height,canvas){
         super(x,y,Vx,Vy,width,height,canvas);
     }
+
     drawBullet = () =>{
         this.contex.fillStyle = 'pink'
         this.contex.fillRect(this.x,this.y,this.width,this.height);
