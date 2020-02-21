@@ -31,10 +31,11 @@ class Game{
         this.drag = 0.1
         this.frames = 0;
         this.turn = 1
-        this.teams = ['red','blue']
+        this.teams = ['red','blue','green']
         this.worms = []
+        this.coefficientOfLoss = 0.5
 
-        this.playerInitX = [0,900]
+        this.playerInitX = [100,900,400]
         this.playerInitY = 400
     }
 
@@ -42,12 +43,11 @@ class Game{
         this.gameArea = new GameArea(this.canvas,this.playerInitY+this.playerHeigth,500)
         this.gameArea.start()
         this.startWorms()
-        console.log(this.wormInUse)
         this.drawTurnTime()
     }
 
     startWorms = () =>{
-        for(let i =0;i<this.teams.length;i++){
+        for(let i=0;i<this.teams.length;i++){
             this.worms.push(new Worm(this.playerInitX[i],this.playerInitY,0,0,this.playerWidth,this.playerHeigth,this.teams[i],this.canvas))
             this.worms[i].start()
         }
@@ -56,9 +56,9 @@ class Game{
     }
 
     drawWorms = () =>{
-        for(let i =0;i<this.worms.length;i++){
+        for(let i=0;i<this.worms.length;i++){
             this.worms[i].newPos(0,this.gravity)
-            this.checkTouch(this.wor)
+            this.touchEffects(this.worms[i])
             this.worms[i].drawWorm()
         }
     }
@@ -78,7 +78,6 @@ class Game{
         this.passTurn()
         this.clear()
         this.keysPressed()
-        this.touchEffects()
         this.gameArea.drawGameArea()
         this.drawWorms()
         this.frames++
@@ -92,18 +91,17 @@ class Game{
     checkIfTouch = (worm) =>{
         const teste = this.gameArea.terrains.reduce((acc,terrain)=>{
             const sideTouch = terrain.checkTouch(worm)
-            return [acc[0] && sideTouch[0],acc[1] && sideTouch[1],acc[2] && sideTouch[2],acc[3] &&sideTouch[3]]
+            return [acc[0] || sideTouch[0],acc[1] || sideTouch[1],acc[2] || sideTouch[2],acc[3] ||  sideTouch[3]]
         },[false,false,false,false]) 
         return teste
     }
 
-    touchEffects = ()=>{
-        for(let i = 0;i<this.worms.length;i++){
-            const touchVector = this.checkIfTouch(this.worms[i])
-
-        }
-        if(this.checkIfTouchY(this.wormInUse)){
-        }
+    touchEffects = (worm)=>{
+        const touchVector = this.checkIfTouch(worm)
+        if(touchVector[0]) worm.touchTop(this.drag,this.coefficientOfLoss)
+        if(touchVector[1]) worm.touchRight(this.coefficientOfLoss)
+        if(touchVector[2]) worm.touchBottom(this.drag,this.coefficientOfLoss)
+        if(touchVector[3]) worm.touchLeft(this.coefficientOfLoss)
     }
 
     passTurn = () =>{
@@ -229,11 +227,13 @@ class Terrain extends Component{
         this.contex.fillRect(this.x,this.y,this.width,this.height);
     }
 
-    checkGroundOrTop = (worm) =>{
-        return (
-            ( worm.bottom() > this.top() && worm.bottom() < this.bottom())||
-            ( worm.top() < this.bottom() && this.top() < worm.top() )
-        )  
+    checkTouch = (worm) =>{
+            return [
+                ( worm.top() < this.bottom() && this.top() < worm.top() && ( ( this.left() < worm.left() && worm.left() < this.right() ) || ( this.left() < worm.right() && worm.right() < this.right() ) ) ),
+                ( worm.right() < this.right() && this.left() < worm.right() &&  ( ( worm.top() < this.bottom() && this.top() < worm.top() ) || ( this.top() < worm.bottom() && worm.bottom() < this.bottom() ) ) ),
+                ( worm.bottom() < this.bottom() && this.top() < worm.bottom() && ( ( this.left() < worm.left() && worm.left() < this.right() )|| ( this.left() < worm.right() && worm.right() < this.right() ) ) ),
+                ( worm.left() < this.right() && this.left() < worm.left() && ( ( worm.top() < this.bottom() && this.top() < worm.top() ) || ( this.top() < worm.bottom() && worm.bottom() < this.bottom() ) ) ),
+            ]  
       }
 }
 
@@ -333,7 +333,6 @@ class Worm extends Component{
     }
     touchBottom = (drag,coefficientOfLoss) =>{
         this.y = this.previousY
-        
         this.numberJumps = 2;
 
         if(Math.abs(this.Vx)>0.5){
