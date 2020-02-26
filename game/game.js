@@ -111,9 +111,9 @@ class Game{
     touchEffectsTerrain = (component)=>{
         const touchVector = this.checkIfTouchTerrain(component)
         if(component.type==='worm'){
+            if(touchVector[2]) component.touchBottom(this.drag,this.coefficientOfLoss,true)
             if(touchVector[0]) component.touchTop(this.drag,this.coefficientOfLoss,true)
             if(touchVector[1]) component.touchRight(this.coefficientOfLoss,true)
-            if(touchVector[2]) component.touchBottom(this.drag,this.coefficientOfLoss,true)
             if(touchVector[3]) component.touchLeft(this.coefficientOfLoss,true)
         }
         else component.explode()
@@ -122,10 +122,10 @@ class Game{
     touchEffectsPlayer = (component)=>{
         const touchVector = this.checkIfTouchPlayer(component)
         if(component.type==='worm'){
-            if(touchVector[0]) component.touchTop(this.drag,this.coefficientOfLoss,false)
-            if(touchVector[1]) component.touchRight(this.coefficientOfLoss,false)
             if(touchVector[2]) component.touchBottom(this.drag,this.coefficientOfLoss,false)
-            if(touchVector[3]) component.touchLeft(this.coefficientOfLoss,false)
+            if(touchVector[0]) component.touchTop(this.drag,this.coefficientOfLoss,false)
+            if(touchVector[1]) component.touchRight(this.drag,this.coefficientOfLoss,false)
+            if(touchVector[3]) component.touchLeft(this.drag,this.coefficientOfLoss,false)
         }
         else component.explode()
     }
@@ -327,12 +327,14 @@ class Worm extends Component{
             this.Vx = 1
         }else{
             this.front = 'right'
+            this.Vx = 1
         }
     }
 
     moveLeft =() =>{
         if(this.front==='right'){
             this.front = 'left'
+            this.Vx = -1
         }else{
             this.Vx = -1
         }
@@ -347,16 +349,19 @@ class Worm extends Component{
             this.angle-=2
         }
     }
+    
     attack = () =>{
-        if(this.frames % 50 ===0 && this.numberBullets>0){
-            const vInicial = 8
-            if(this.front ==='right'){
-                this.bullets.push(new Bullet(this.centerX,this.centerY,vInicial*Math.cos(this.angle/180*Math.PI),-vInicial*Math.sin(this.angle/180*Math.PI),10,10,this.canvas))
+        if(!this.isMoving()){
+            if(this.frames % 50 ===0 && this.numberBullets>0){
+                const vInicial = 8
+                if(this.front ==='right'){
+                    this.bullets.push(new Bullet(this.centerX,this.centerY,vInicial*Math.cos(this.angle/180*Math.PI),-vInicial*Math.sin(this.angle/180*Math.PI),10,10,this.canvas))
+                }
+                else{
+                    this.bullets.push(new Bullet(this.x,this.y,-vInicial*Math.cos(this.angle/180*Math.PI),-vInicial*Math.sin(this.angle/180*Math.PI),10,10,this.canvas))
+                }
+                this.numberBullets--
             }
-            else{
-                this.bullets.push(new Bullet(this.x,this.y,-vInicial*Math.cos(this.angle/180*Math.PI),-vInicial*Math.sin(this.angle/180*Math.PI),10,10,this.canvas))
-            }
-            this.numberBullets--
         }
     }
 
@@ -371,16 +376,24 @@ class Worm extends Component{
         return this.Vx !==0 || this.Vy !==0
     }
 
+    isArrowRightorLeft = () =>{
+        return keysUsed[37] || keysUsed[39]
+    }
+
     touchTop = (drag,coefficientOfLoss) =>{
         this.y = this.previousY
 
         if(Math.abs(this.Vx)>1){
             this.Vx = this.Vx - Math.sign(this.Vx)*drag
         }
+        else if(Math.abs(this.Vx)<1 && this.isArrowRightorLeft())
+        {
+            this.Vx=this.Vx
+        }
         else{
             this.Vx=0
         }
-
+        
         if(this.Vy>-2){
             this.Vy=0;
         }
@@ -389,11 +402,14 @@ class Worm extends Component{
         }
     }
     touchBottom = (drag,coefficientOfLoss) =>{
-        console.log('entrou')
         this.y = this.previousY
         this.numberJumps = 2;
         if(Math.abs(this.Vx)>1){
             this.Vx = this.Vx - Math.sign(this.Vx)*drag
+        }
+        else if(Math.abs(this.Vx)<=1 && this.isArrowRightorLeft())
+        {
+            this.Vx=this.Vx
         }
         else{
             this.Vx=0
@@ -406,13 +422,12 @@ class Worm extends Component{
             this.Vy = -this.Vy*coefficientOfLoss
         }   
     }
-    touchRight = (coefficientOfLoss) =>{
+    touchRight = (drag,coefficientOfLoss) =>{
         this.x = this.previousX
         if(this.Vx>1){
             this.Vy = -this.Vy*coefficientOfLoss
         }
-
-        else if(this.Vx===1){
+        else if(Math.abs(this.Vx)===1){
             this.Vy=-0.1;
         }
         else{
@@ -420,13 +435,12 @@ class Worm extends Component{
         }
         
     }
-    touchLeft = (coefficientOfLoss) =>{
+    touchLeft = (drag,coefficientOfLoss) =>{
         this.x = this.previousX
         if(this.Vx<-1){
             this.Vy = -this.Vy*coefficientOfLoss
         }
-
-        else if(this.Vx===-1){
+        else if(Math.abs(this.Vx)===1){
             this.Vy=-0.1;
         }
         else{
