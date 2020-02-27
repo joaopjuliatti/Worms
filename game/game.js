@@ -125,7 +125,6 @@ class Game{
         }
         else {
             if(touchVector[0]||touchVector[1]||touchVector[2]||touchVector[3]){
-                console.log("entrou")
                 this.wormInUse.bullets.splice(idx,1)
                 this.explosion(component)
             }
@@ -160,7 +159,7 @@ class Game{
     drawTurnTime = () =>{
         this.contex.font = '30px Arial black'
         this.contex.fillStyle = this.wormInUse.team
-        this.contex.fillText(`${this.frames/100}`,400,100)
+        this.contex.fillText(`${this.frames.principal/100}`,400,100)
 
     }
     drawAnimations = () => {
@@ -171,19 +170,35 @@ class Game{
         }
     }
     explosion = (bullet) =>{
-    //centro da explosao bullet centerX centerY
-    //raio da explosao 10
-    //raio de efetivo 10
-        const temporario = this.gameArea.terrains
+    //raio da explosao 30
+    //raio de efetivo  30
+        let temporario = this.gameArea.terrains
         let notDestroyed = []
         for(let i = 0;i<temporario.length;i++){
-            let distanceToBullet = (temporario[i].centerX-bullet.centerX)**2+(temporario[i].centerY-bullet.centerY)**2
-            if(distanceToBullet>1000) {
+            let distanceToBulletSquare = (temporario[i].centerX-bullet.centerX)**2+(temporario[i].centerY-bullet.centerY)**2
+            if(distanceToBulletSquare>bullet.rExplosion**2 && distanceToBulletSquare<(bullet.rExplosion+5)**2) {
+                temporario[i].color='yellow'
                 notDestroyed.push(temporario[i])
             }
-
+            else if(distanceToBulletSquare>(bullet.rExplosion+5)**2) {
+                notDestroyed.push(temporario[i])
+            }
         }
         this.gameArea.terrains= notDestroyed
+
+        temporario = this.worms
+        for(let i = 0;i<temporario.length;i++){
+
+            let xAparente = (temporario[i].centerX-bullet.centerX)
+            let yAparente = (temporario[i].centerY-bullet.centerY)
+            let distanceToBulletSquare = xAparente**2+yAparente**2
+
+            if(0<distanceToBulletSquare && distanceToBulletSquare<bullet.rExplosion**2){
+                temporario[i].Vx= bullet.vExplosion*xAparente*(distanceToBulletSquare**(-1/2)-bullet.rExplosion**(-1/2))
+                temporario[i].Vy= bullet.vExplosion*yAparente*(distanceToBulletSquare**(-1/2)-bullet.rExplosion**(-1/2))
+                temporario[i].life -= bullet.damage*((distanceToBulletSquare**(1/2))/(bullet.rExplosion)) 
+            }
+        }
     }
 }
 
@@ -294,14 +309,13 @@ class Terrain extends Component{
     constructor(x,y,Vx,Vy,width,height,canvas){
         super(x,y,Vx,Vy,width,height,canvas);
         this.type = 'terrain'
-        this.color = 'red'
+        this.color = 'brown'
+        this.damage = 50
     }
 
     draw = () =>{
         this.center()
-        let distanceToBullet = (this.centerX-243)**2+(this.centerY-435.6)**2
-        if(distanceToBullet<1000) this.contex.fillStyle = this.color
-        else this.contex.fillStyle = 'yellow'
+        this.contex.fillStyle = this.color 
         this.contex.fillRect(this.x,this.y,this.width,this.height);
     }
 
@@ -494,6 +508,8 @@ class Bullet extends Component{
         super(x,y,Vx,Vy,width,height,canvas);
         this.type = 'bullet'
         this.color ='pink'
+        this.vExplosion = 25
+        this.rExplosion = 31
     }
 
     drawBullet = () =>{
