@@ -32,7 +32,7 @@ class Game{
         this.frames = {principal:0,turn:0,passTurn:0,explosion:0};
         this.animations = []
         this.turn = 1
-        this.teams = ['red','blue','green']
+        this.teams = ['red','green']
         this.worms = []
         this.coefficientOfLoss = 0.5
         this.playerInitX = [100,900,400]
@@ -125,6 +125,7 @@ class Game{
         }
         else {
             if(touchVector[0]||touchVector[1]||touchVector[2]||touchVector[3]){
+                console.log("entrou")
                 this.wormInUse.bullets.splice(idx,1)
                 this.explosion(component)
             }
@@ -171,12 +172,18 @@ class Game{
     }
     explosion = (bullet) =>{
     //centro da explosao bullet centerX centerY
-    //raio da explosao 60
-    //raio de efetivo 70
-        for(let i = 0;i<this.gameArea.terrains;i++){
-            let distanceToBullet = (terrain.centerX-bullet.centerX)**2+(terrain.centerY-bullet.centerY)**2
-            if(distanceToBullet<60) this.gameArea.terrains.splice(i,1)
+    //raio da explosao 10
+    //raio de efetivo 10
+        const temporario = this.gameArea.terrains
+        let notDestroyed = []
+        for(let i = 0;i<temporario.length;i++){
+            let distanceToBullet = (temporario[i].centerX-bullet.centerX)**2+(temporario[i].centerY-bullet.centerY)**2
+            if(distanceToBullet>1000) {
+                notDestroyed.push(temporario[i])
+            }
+
         }
+        this.gameArea.terrains= notDestroyed
     }
 }
 
@@ -196,7 +203,7 @@ class GameArea{
         const numberRows = (this.canvas.height - this.initY)/widthAtom
         for(let i = 0;i<this.atomization;i++){
             for(let j=0; j<numberRows;j++){
-                this.terrains.push(new Terrain(0+i*widthAtom,this.initY+j*widthAtom,0,0,widthAtom+1,widthAtom+1,this.canvas))
+                this.terrains.push(new Terrain(0+i*widthAtom,this.initY+j*widthAtom,0,0,widthAtom,widthAtom,this.canvas))
             }
         }
         this.drawGameArea()
@@ -287,10 +294,14 @@ class Terrain extends Component{
     constructor(x,y,Vx,Vy,width,height,canvas){
         super(x,y,Vx,Vy,width,height,canvas);
         this.type = 'terrain'
+        this.color = 'red'
     }
 
     draw = () =>{
-        this.contex.fillStyle = 'yellow'
+        this.center()
+        let distanceToBullet = (this.centerX-243)**2+(this.centerY-435.6)**2
+        if(distanceToBullet<1000) this.contex.fillStyle = this.color
+        else this.contex.fillStyle = 'yellow'
         this.contex.fillRect(this.x,this.y,this.width,this.height);
     }
 
@@ -486,11 +497,9 @@ class Bullet extends Component{
     }
 
     drawBullet = () =>{
+        this.center()
         this.contex.fillStyle = 'pink'
         this.contex.fillRect(this.x,this.y,this.width,this.height);
-    }
-    explode = () =>{
-        console.log('explodiu')
     }
 
 }
