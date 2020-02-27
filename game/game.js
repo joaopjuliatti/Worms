@@ -29,12 +29,12 @@ class Game{
         this.playerHeigth = 40
         this.gravity = 0.1
         this.drag = 0.1
-        this.frames = 0;
+        this.frames = {principal:0,turn:0,passTurn:0,explosion:0};
+        this.animations = []
         this.turn = 1
         this.teams = ['red','blue','green']
         this.worms = []
         this.coefficientOfLoss = 0.5
-
         this.playerInitX = [100,900,400]
         this.playerInitY = 400
     }
@@ -54,16 +54,18 @@ class Game{
         }
         this.indWormInUse = Math.floor(Math.random()*this.worms.length)
         this.wormInUse = this.worms[this.indWormInUse]
+        this.wormInUse.inUse=true
     }
 
     drawWorms = () =>{
         for(let i=0;i<this.worms.length;i++){
             this.worms[i].newPos(0,this.gravity)
-            this.touchEffectsTerrain(this.worms[i])
+            this.touchEffectsTerrain(this.worms[i],i)
             this.worms[i].drawWorm()
         }
         this.wormInUse.drawAim();
     }
+    
 
     clear = () =>{
         this.contex.clearRect(0,0,this.canvas.width,this.canvas.height)
@@ -86,8 +88,11 @@ class Game{
         this.keysPressed()
         this.gameArea.drawGameArea()
         this.drawWorms()
-        this.frames++
+        this.frames.principal++
         this.drawTurnTime()
+        this.wormInUse.bullets.forEach((bullet,idx) => {
+            this.touchEffectsTerrain(bullet,idx)
+        });
     }
 
     interval = () =>{
@@ -102,13 +107,15 @@ class Game{
     }
 
     checkIfTouchPlayer = (component) => {
-        return  this.worms.reduce((acc,player)=>{
-            const sideTouch = component.checkTouch(player)
-            return [acc[0] || sideTouch[0],acc[1] || sideTouch[1],acc[2] || sideTouch[2],acc[3] ||  sideTouch[3]]
-        },[false,false,false,false]) 
+        for(let i = 0;i<this.worms.length;i++){
+            const sideTouch = component.checkTouch(this.worms[i])
+            const touchPlayer = sideTouch[0] || sideTouch[1] || sideTouch[2] || sideTouch[3]
+            if(touchPlayer) return true
+        }
+        return false
     }
 
-    touchEffectsTerrain = (component)=>{
+    touchEffectsTerrain = (component,idx)=>{
         const touchVector = this.checkIfTouchTerrain(component)
         if(component.type==='worm'){
             if(touchVector[2]) component.touchBottom(this.drag,this.coefficientOfLoss,true)
@@ -116,33 +123,37 @@ class Game{
             if(touchVector[1]) component.touchRight(this.coefficientOfLoss,true)
             if(touchVector[3]) component.touchLeft(this.coefficientOfLoss,true)
         }
-        else component.explode()
+        else {
+            if(touchVector[0]||touchVector[1]||touchVector[2]||touchVector[3]){
+                this.wormInUse.bullets.splice(idx,1)
+                this.explosion(component)
+            }
+        }
     }
 
-    touchEffectsPlayer = (component)=>{
-        const touchVector = this.checkIfTouchPlayer(component)
-        if(component.type==='worm'){
-            if(touchVector[2]) component.touchBottom(this.drag,this.coefficientOfLoss,false)
-            if(touchVector[0]) component.touchTop(this.drag,this.coefficientOfLoss,false)
-            if(touchVector[1]) component.touchRight(this.drag,this.coefficientOfLoss,false)
-            if(touchVector[3]) component.touchLeft(this.drag,this.coefficientOfLoss,false)
-        }
-        else component.explode()
+    touchEffectsPlayer = (bullet,idx)=>{
+        const touchPlayer = this.checkIfTouchPlayer(bullet)
+        if(touchPlayer){
+            this.wormInUse.bullets.splice(idx,1)
+            this.explosion(bullet)
+        } 
     }
 
     passTurn = () =>{
-        if(this.frames > 600 && !this.wormInUse.isMoving()){
+        if(this.frames.principal > 600 && !this.wormInUse.isMoving()){
             this.turn++
             this.nextWorm()
-            this.frames = 0
+            this.frames.principal = 0
             this.wormInUse.beginTurn()
         }
     }
 
     nextWorm = () =>{
+        this.wormInUse.inUse=false
         this.indWormInUse ++
         if(this.indWormInUse>=this.worms.length) this.indWormInUse = 0
         this.wormInUse = this.worms[this.indWormInUse]
+        this.wormInUse.inUse=true
     }
 
     drawTurnTime = () =>{
@@ -150,6 +161,22 @@ class Game{
         this.contex.fillStyle = this.wormInUse.team
         this.contex.fillText(`${this.frames/100}`,400,100)
 
+    }
+    drawAnimations = () => {
+        if(this.animations.length>0){
+            for (i = 0; i < this.animations.length; i++) {
+                this.animations[i]();
+            }
+        }
+    }
+    explosion = (bullet) =>{
+    //centro da explosao bullet centerX centerY
+    //raio da explosao 60
+    //raio de efetivo 70
+        for(let i = 0;i<this.gameArea.terrains;i++){
+            let distanceToBullet = (terrain.centerX-bullet.centerX)**2+(terrain.centerY-bullet.centerY)**2
+            if(distanceToBullet<60) this.gameArea.terrains.splice(i,1)
+        }
     }
 }
 
@@ -283,6 +310,7 @@ class Worm extends Component{
         this.angle = 0
         this.life = 100
         this.stamina = 100
+        this.inUse = false
     }
 
     start = () =>{
@@ -386,7 +414,7 @@ class Worm extends Component{
         if(Math.abs(this.Vx)>1){
             this.Vx = this.Vx - Math.sign(this.Vx)*drag
         }
-        else if(Math.abs(this.Vx)<1 && this.isArrowRightorLeft())
+        else if(Math.abs(this.Vx)<1 && this.isArrowRightorLeft() && this.inUse)
         {
             this.Vx=this.Vx
         }
@@ -407,7 +435,7 @@ class Worm extends Component{
         if(Math.abs(this.Vx)>1){
             this.Vx = this.Vx - Math.sign(this.Vx)*drag
         }
-        else if(Math.abs(this.Vx)<=1 && this.isArrowRightorLeft())
+        else if(Math.abs(this.Vx)<=1 && this.isArrowRightorLeft() && this.inUse)
         {
             this.Vx=this.Vx
         }
@@ -422,7 +450,7 @@ class Worm extends Component{
             this.Vy = -this.Vy*coefficientOfLoss
         }   
     }
-    touchRight = (drag,coefficientOfLoss) =>{
+    touchRight = (coefficientOfLoss) =>{
         this.x = this.previousX
         if(this.Vx>1){
             this.Vy = -this.Vy*coefficientOfLoss
@@ -435,7 +463,7 @@ class Worm extends Component{
         }
         
     }
-    touchLeft = (drag,coefficientOfLoss) =>{
+    touchLeft = (coefficientOfLoss) =>{
         this.x = this.previousX
         if(this.Vx<-1){
             this.Vy = -this.Vy*coefficientOfLoss
