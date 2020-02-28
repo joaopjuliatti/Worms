@@ -92,6 +92,7 @@ class Game{
         this.drawTurnTime()
         this.wormInUse.bullets.forEach((bullet,idx) => {
             this.touchEffectsTerrain(bullet,idx)
+            this.touchEffectsPlayer(bullet,idx)
         });
     }
 
@@ -194,8 +195,8 @@ class Game{
             let distanceToBulletSquare = xAparente**2+yAparente**2
 
             if(0<distanceToBulletSquare && distanceToBulletSquare<bullet.rExplosion**2){
-                temporario[i].Vx= bullet.vExplosion*xAparente*(distanceToBulletSquare**(-1/2)-bullet.rExplosion**(-1/2))
-                temporario[i].Vy= bullet.vExplosion*yAparente*(distanceToBulletSquare**(-1/2)-bullet.rExplosion**(-1/2))
+                temporario[i].Vx= -bullet.vExplosion*xAparente*(distanceToBulletSquare**(-1/2)-bullet.rExplosion**(-1/2))
+                temporario[i].Vy= -bullet.vExplosion*yAparente*(distanceToBulletSquare**(-1/2)-bullet.rExplosion**(-1/2))
                 temporario[i].life -= bullet.damage*((distanceToBulletSquare**(1/2))/(bullet.rExplosion)) 
             }
         }
@@ -508,7 +509,7 @@ class Bullet extends Component{
         super(x,y,Vx,Vy,width,height,canvas);
         this.type = 'bullet'
         this.color ='pink'
-        this.vExplosion = 25
+        this.vExplosion = 1
         this.rExplosion = 31
     }
 
