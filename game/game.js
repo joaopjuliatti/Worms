@@ -3,7 +3,7 @@ keysUsed = {}
 document.onkeydown = function(e){
     keysUsed[e.keyCode] = e.type =='keydown'
   }
-  document.onkeyup = function(e){
+document.onkeyup = function(e){
     keysUsed[e.keyCode] = e.type =='keydown'
 }
 
@@ -35,7 +35,7 @@ class Game{
         this.teams = ['red','green']
         this.worms = []
         this.coefficientOfLoss = 0.5
-        this.playerInitX = [100,900,400]
+        this.playerInitX = [100,400,400]
         this.playerInitY = 400
     }
 
@@ -311,7 +311,6 @@ class Terrain extends Component{
         super(x,y,Vx,Vy,width,height,canvas);
         this.type = 'terrain'
         this.color = 'brown'
-        this.damage = 50
     }
 
     draw = () =>{
@@ -336,6 +335,7 @@ class Worm extends Component{
         this.angle = 0
         this.life = 100
         this.stamina = 100
+        this.bulletSize = 10
         this.inUse = false
     }
 
@@ -348,6 +348,7 @@ class Worm extends Component{
         this.contex.fillStyle = this.team
         this.contex.fillRect(this.x,this.y,this.width,this.height);
         this.frames++;    
+        this.drawLifeBar()
         this.drawBullets() 
     }
     drawAim = () =>{
@@ -365,8 +366,10 @@ class Worm extends Component{
     beginTurn(){
         this.frames = 0;
         this.bullets =[];
-        this.numberBullets=1;
+        this.numberBullets=10;
         this.numberJumps = 2
+        this.angle = 0
+
     }
 
     jump = () =>{
@@ -394,14 +397,28 @@ class Worm extends Component{
         }
     }
     angleUp = () =>{
-        if(this.angle<=90){
+        if(this.angle<90){
             this.angle+=2
         }
     }
     angleDown = () =>{
-        if(this.angle>=-90){
+        if(this.angle>-90){
             this.angle-=2
         }
+    }
+
+    drawLifeBar(){
+        this.contex.lineWidth = 1
+        this.contex.strokeStyle='white'
+        this.contex.strokeRect(this.centerX-21, this.centerY-this.height*5/4, 42, 7);
+        this.contex.fillStyle ='red'
+        this.contex.fillRect(this.centerX-20,this.centerY-this.height*5/4+1,42*(this.life/100),5)
+    }
+    drawStaminaBar(){
+        if(inUse){
+
+        }
+
     }
     
     attack = () =>{
@@ -409,10 +426,10 @@ class Worm extends Component{
             if(this.frames % 50 ===0 && this.numberBullets>0){
                 const vInicial = 8
                 if(this.front ==='right'){
-                    this.bullets.push(new Bullet(this.centerX,this.centerY,vInicial*Math.cos(this.angle/180*Math.PI),-vInicial*Math.sin(this.angle/180*Math.PI),10,10,this.canvas))
+                    this.bullets.push(new Bullet(this.right(),this.centerY,vInicial*Math.cos(this.angle/180*Math.PI),-vInicial*Math.sin(this.angle/180*Math.PI),this.bulletSize,this.bulletSize,this.canvas))
                 }
                 else{
-                    this.bullets.push(new Bullet(this.x,this.y,-vInicial*Math.cos(this.angle/180*Math.PI),-vInicial*Math.sin(this.angle/180*Math.PI),10,10,this.canvas))
+                    this.bullets.push(new Bullet(this.left()-this.bulletSize,this.centerY,-vInicial*Math.cos(this.angle/180*Math.PI),-vInicial*Math.sin(this.angle/180*Math.PI),this.bulletSize,this.bulletSize,this.canvas))
                 }
                 this.numberBullets--
             }
@@ -510,7 +527,8 @@ class Bullet extends Component{
         this.type = 'bullet'
         this.color ='pink'
         this.vExplosion = 1
-        this.rExplosion = 31
+        this.rExplosion = 50
+        this.damage = 50
     }
 
     drawBullet = () =>{
