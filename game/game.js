@@ -66,6 +66,44 @@ class Game{
         this.wormInUse.drawAim();
     }
     
+    drawFace =() =>{
+        this.contex.beginPath()
+        this.contex.strokeStyle = 'white'
+        this.contex.lineWidth = 4
+        this.contex.arc(60,60,30,0,2*Math.PI)
+        this.contex.closePath()
+        this.contex.stroke()
+        this.contex.fillStyle = this.wormInUse.team
+        this.contex.fillRect(45,40,30,40)
+        this.drawBigLifeBar()
+        this.drawBigStaminaBar()
+    }
+
+    drawBigLifeBar = () =>{
+        this.contex.lineWidth = 1
+        this.contex.strokeStyle='white'
+        this.contex.strokeRect(95, 37,122 , 20);
+        this.contex.fillStyle ='red'
+        this.contex.fillRect(96,38,120*(this.wormInUse.life/100),18)
+
+        this.contex.font = '15px Droid Sans black'
+        this.contex.fillStyle = 'white'
+        this.contex.fillText(`${parseInt(this.wormInUse.life)}`,190,52)
+
+    }
+
+    drawBigStaminaBar = () =>{
+        this.contex.lineWidth = 1
+        this.contex.strokeStyle='white'
+        this.contex.strokeRect(95, 63, 122, 20);
+        this.contex.fillStyle ='green'
+        this.contex.fillRect(96,64,120*(this.wormInUse.stamina/100),18)
+
+        this.contex.font = '15px Droid Sans black'
+        this.contex.fillStyle = 'white'
+        this.contex.fillText(`${parseInt(this.wormInUse.stamina)}`,190,79)
+
+    }
 
     clear = () =>{
         this.contex.clearRect(0,0,this.canvas.width,this.canvas.height)
@@ -94,6 +132,7 @@ class Game{
             this.touchEffectsTerrain(bullet,idx)
             this.touchEffectsPlayer(bullet,idx)
         });
+        this.drawFace()
     }
 
     interval = () =>{
@@ -348,8 +387,8 @@ class Worm extends Component{
         this.contex.fillStyle = this.team
         this.contex.fillRect(this.x,this.y,this.width,this.height);
         this.frames++;    
-        this.drawLifeBar()
         this.drawBullets() 
+        this.drawLifeBar()
     }
     drawAim = () =>{
         if(!this.isMoving()){
@@ -361,6 +400,13 @@ class Worm extends Component{
             this.contex.closePath();
             this.contex.stroke()
         }
+    }
+    drawLifeBar = ()=>{
+        this.contex.lineWidth = 1
+        this.contex.strokeStyle='white'
+        this.contex.strokeRect(this.centerX-21, this.centerY-this.height*5/4, 42, 7);
+        this.contex.fillStyle ='red'
+        this.contex.fillRect(this.centerX-20,this.centerY-this.height*5/4+1,42*(this.life/100),5)
     }
 
     beginTurn(){
@@ -405,20 +451,6 @@ class Worm extends Component{
         if(this.angle>-90){
             this.angle-=2
         }
-    }
-
-    drawLifeBar(){
-        this.contex.lineWidth = 1
-        this.contex.strokeStyle='white'
-        this.contex.strokeRect(this.centerX-21, this.centerY-this.height*5/4, 42, 7);
-        this.contex.fillStyle ='red'
-        this.contex.fillRect(this.centerX-20,this.centerY-this.height*5/4+1,42*(this.life/100),5)
-    }
-    drawStaminaBar(){
-        if(inUse){
-
-        }
-
     }
     
     attack = () =>{
