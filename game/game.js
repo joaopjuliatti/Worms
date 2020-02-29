@@ -234,20 +234,26 @@ class Game{
             else if(distanceToBulletSquare>(bullet.rExplosion+5)**2) {
                 notDestroyed.push(temporario[i])
             }
+            else{
+                console.log('entrou')
+            }
         }
         this.gameArea.terrains= notDestroyed
-
         temporario = this.worms
         for(let i = 0;i<temporario.length;i++){
 
             let xAparente = (temporario[i].centerX-bullet.centerX)
             let yAparente = (temporario[i].centerY-bullet.centerY)
             let distanceToBulletSquare = xAparente**2+yAparente**2
-
+            console.log(distanceToBulletSquare**(1/2),temporario[i].team)
             if(0<distanceToBulletSquare && distanceToBulletSquare<bullet.rExplosion**2){
                 temporario[i].Vx= -bullet.vExplosion*xAparente*(distanceToBulletSquare**(-1/2)-bullet.rExplosion**(-1/2))
                 temporario[i].Vy= -bullet.vExplosion*yAparente*(distanceToBulletSquare**(-1/2)-bullet.rExplosion**(-1/2))
-                temporario[i].life -= bullet.damage*((distanceToBulletSquare**(1/2))/(bullet.rExplosion)) 
+                console.log((bullet.damage*(1-(distanceToBulletSquare**(1/2))/(bullet.rExplosion))),temporario[i].team)
+                temporario[i].life -= bullet.damage*(1-(distanceToBulletSquare**(1/2))/(bullet.rExplosion)) 
+            }
+            else if(distanceToBulletSquare===0){
+                temporario[i].life -= bullet.damage 
             }
         }
     }
@@ -600,10 +606,10 @@ class Bullet extends Component{
         this.vExplosion = 2
         this.rExplosion = 30
         this.damage = 30
+        this.center()
     }
 
     drawBullet = () =>{
-        this.center()
         this.contex.fillStyle = 'pink'
         this.contex.fillRect(this.x,this.y,this.width,this.height);
     }
