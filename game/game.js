@@ -41,6 +41,9 @@ class Game{
         this.timeStampLast = 0
         this.executionTime = 0
         this.turnTime = 600
+        this.faceImage = new Image()
+        this.isPause = false
+        this.endGame = false
     }
 
     start = () =>{
@@ -82,7 +85,8 @@ class Game{
         this.contex.closePath()
         this.contex.stroke()
         this.contex.fillStyle = this.wormInUse.team
-        this.contex.fillRect(45,40,30,40)
+        this.faceImage.src = `./image/soldie${this.wormInUse.team}face.png`
+        this.contex.drawImage(this.faceImage,40,40,40,40);
         this.drawBigLifeBar()
         this.drawBigStaminaBar()
     }
@@ -147,6 +151,7 @@ class Game{
         this.drawTurnTime()
         this.drawFace()
         this.executionTime -= new Date().getTime()
+        this.isEndGame()
         window.requestAnimationFrame(this.updateGame);
 
     }
@@ -249,6 +254,7 @@ class Game{
         }
         this.gameArea.terrains= notDestroyed
         temporario = this.worms
+        let notDead = []
         for(let i = 0;i<temporario.length;i++){
 
             let xAparente = (temporario[i].centerX-bullet.centerX)
@@ -262,6 +268,17 @@ class Game{
             else if(distanceToBulletSquare===0){
                 temporario[i].life -= bullet.damage 
             }
+            if(temporario[i].life>0){
+                notDead.push(temporario[i])
+            }
+        }
+        this.worms = notDead
+    }
+    isEndGame = () =>{
+        if(this.worms.length===1){
+            this.endGame = true
+            this.contex.style = this.worms[0].team
+            this.contex.fillRect(0,200,1000,200)
         }
     }
 }
@@ -646,7 +663,7 @@ class Bullet extends Component{
         this.color ='pink'
         this.vExplosion = 2
         this.rExplosion = 30
-        this.damage = 30
+        this.damage = 50
         this.bulletImage = new Image()
         this.center()
     }
