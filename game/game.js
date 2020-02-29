@@ -1,21 +1,4 @@
-//player movement
-keysUsed = {}
-document.onkeydown = function(e){
-    keysUsed[e.keyCode] = e.type =='keydown'
-  }
-document.onkeyup = function(e){
-    keysUsed[e.keyCode] = e.type =='keydown'
-}
 
-
-
-//Initialization canvas and contex
-const globalCanvas = document.createElement('canvas');
-globalCanvas.width = 1500;
-globalCanvas.height = 500;
-document.getElementById('game-board').appendChild(globalCanvas);
-
-const globalContex1 = globalCanvas.getContext('2d');
 
 
 
@@ -27,7 +10,7 @@ class Game{
         this.atomization = 500
         this.playerWidth = 20
         this.playerHeigth = 30
-        this.gravity = 0.1
+        this.gravity = 0.3
         this.drag = 0.1
         this.frames = {principal:0,turn:0,passTurn:0,explosion:0};
         this.animations = []
@@ -35,26 +18,32 @@ class Game{
         this.teams = ['red','blue']
         this.worms = []
         this.coefficientOfLoss = 0.5
-        this.playerInitX = [100,200]
+        this.playerInitX = [100,1400]
         this.playerInitY = 380
         this.timeStampNow = 0
         this.timeStampLast = 0
         this.executionTime = 0
         this.turnTime = 600
-        this.faceImage = new Image()
-        this.isPause = false
-        this.endGame = false
-    }
+        this.faceImage = new Image() 
+        this.endGame = true
+    }  
 
     start = () =>{
+        this.isPause = false
+        this.endGame = false
+        this.standBy = false
+        this.frames = {principal:0,turn:0,passTurn:0,explosion:0};
+        this.clear()
         this.gameArea = new GameArea(this.canvas,this.playerInitY+this.playerHeigth,500)
         this.gameArea.start()
         this.startWorms()
         this.timeStampNow=new Date().getTime()
         this.drawTurnTime()
+        window.requestAnimationFrame(game.updateGame);
     }
 
     startWorms = () =>{
+        this.worms = []
         for(let i=0;i<this.teams.length;i++){
             this.worms.push(new Worm(this.playerInitX[i],this.playerInitY,0,0,this.playerWidth,this.playerHeigth,this.teams[i],this.canvas))
             this.worms[i].start()
@@ -62,6 +51,10 @@ class Game{
         this.indWormInUse = Math.floor(Math.random()*this.worms.length)
         this.wormInUse = this.worms[this.indWormInUse]
         this.wormInUse.inUse=true
+    }
+
+    clear = () =>{
+        this.contex.clearRect(0,0,this.canvas.width,this.canvas.height)
     }
 
     drawWorms = () =>{
@@ -125,44 +118,53 @@ class Game{
 
     }
 
-    clear = () =>{
-        this.contex.clearRect(0,0,this.canvas.width,this.canvas.height)
+
+    drawAnimationNextTurn = () =>{
+        this.contex.fillStyle ='white'
+        this.contex.fillRect(0,200,this.canvas.width,90)
+        this.contex.font = '100px Arial black'
+        this.contex.fillStyle = this.wormInUse.team
+        this.frames.passTurn++
+        if(this.frames.passTurn<60){
+            this.contex.fillText(`TEAM ${(this.wormInUse.team).toUpperCase()} TURN   `,0+this.frames.passTurn*9,280)
+        }
+        else {
+            this.standBy = false
+            this.frames.passTurn = 0
+        }
+
+    }
+
+    drawTurnTime = () =>{
+        this.contex.font = '30px Arial black'
+        this.contex.fillStyle = this.wormInUse.team
+        this.contex.fillText(`TURN ENDS IN ${parseFloat((this.turnTime-this.frames.principal)/60).toFixed(2)}`,this.canvas.width/2-200,100)
+        this.contex.font = '15px Robot black'
+        this.contex.fillStyle = 'white'
+        this.contex.fillText(`fps:${parseInt(1000/(this.timeStampNow-this.timeStampLast))}`,this.canvas.width-50,20)
+
     }
 
     keysPressed = () =>{
 
-        
-        if(keysUsed[37] && keysUsed[39]){
+        if(!this.standBy){
+            if(keysUsed[37] && keysUsed[39]){
+            }
+            else{
+                if(keysUsed[37]) this.wormInUse.moveLeft()
+                if(keysUsed[39]) this.wormInUse.moveRight()
+            }
+            if(keysUsed[32]) this.wormInUse.jump()
+            if(keysUsed[90]) this.wormInUse.attack()
+            if(!this.wormInUse.isMoving()){
+                if(keysUsed[38]) this.wormInUse.angleUp()
+                if(keysUsed[40]) this.wormInUse.angleDown()
+            }
+            if(this.endGame && keysUsed[13]) 
+            {
+                this.start()
+            }
         }
-        else{
-            if(keysUsed[37]) this.wormInUse.moveLeft()
-            if(keysUsed[39]) this.wormInUse.moveRight()
-        }
-        if(keysUsed[32]) this.wormInUse.jump()
-        if(keysUsed[90]) this.wormInUse.attack()
-        if(!this.wormInUse.isMoving()){
-            if(keysUsed[38]) this.wormInUse.angleUp()
-            if(keysUsed[40]) this.wormInUse.angleDown()
-        }
-    }
-
-    updateGame = () =>{
-        if(!this.endGame && !this.isPause){
-            this.executionTime =new Date().getTime() 
-            this.timeStampLast = this.timeStampNow
-            this.timeStampNow = new Date().getTime()
-            this.passTurn()
-            this.clear()
-            this.keysPressed()
-            this.gameArea.drawGameArea()
-            this.drawWorms()
-            this.frames.principal++
-            this.drawTurnTime()
-            this.drawFace()
-            this.executionTime -= new Date().getTime()
-            this.isEndGame()
-        }
-        window.requestAnimationFrame(this.updateGame);
 
     }
 
@@ -212,40 +214,6 @@ class Game{
         } 
     }
 
-    passTurn = () =>{
-        if((this.frames.principal >=this.turnTime ||(keysUsed[13] && keysUsed[18]))&& !this.wormInUse.isMoving()){
-            this.turn++
-            this.nextWorm()
-            this.frames.principal = 0
-            this.wormInUse.beginTurn()
-        }
-    }
-
-    nextWorm = () =>{
-        this.wormInUse.inUse=false
-        this.indWormInUse ++
-        if(this.indWormInUse>=this.worms.length) this.indWormInUse = 0
-        this.wormInUse = this.worms[this.indWormInUse]
-        this.wormInUse.inUse=true
-    }
-
-    drawTurnTime = () =>{
-        this.contex.font = '30px Arial black'
-        this.contex.fillStyle = this.wormInUse.team
-        this.contex.fillText(`${parseFloat((this.turnTime-this.frames.principal)/60).toFixed(2)}`,400,100)
-        this.contex.font = '15px Robot black'
-        this.contex.fillStyle = 'white'
-        this.contex.fillText(`fps:${parseInt(1000/(this.timeStampNow-this.timeStampLast))}`,950,20)
-
-
-    }
-    drawAnimations = () => {
-        if(this.animations.length>0){
-            for (i = 0; i < this.animations.length; i++) {
-                this.animations[i]();
-            }
-        }
-    }
     explosion = (bullet) =>{
     //raio da explosao 30
     //raio de efetivo  30
@@ -279,15 +247,60 @@ class Game{
             }
         }
     }
+
+    nextWorm = () =>{
+        this.wormInUse.inUse=false
+        this.indWormInUse ++
+        if(this.indWormInUse>=this.worms.length) this.indWormInUse = 0
+        this.wormInUse = this.worms[this.indWormInUse]
+        this.wormInUse.inUse=true
+    }
+
+    passTurn = () =>{
+        if((this.frames.principal >=this.turnTime ||(keysUsed[13] && keysUsed[18]))&& !this.wormInUse.isMoving()){
+            this.standBy = true
+            this.turn++
+            this.nextWorm()
+            this.frames.principal = 0
+            this.wormInUse.beginTurn()
+        }
+    }
+
+    updateGame = () =>{
+        if(!this.endGame && !this.isPause){
+            this.executionTime =new Date().getTime() 
+            this.timeStampLast = this.timeStampNow
+            this.timeStampNow = new Date().getTime()
+            this.clear()
+            this.gameArea.drawGameArea()
+            this.drawWorms()
+            this.drawFace()
+            this.executionTime -= new Date().getTime()
+            this.isEndGame()
+            if(!this.standBy){
+                this.frames.principal++
+                this.drawTurnTime()
+                this.passTurn()
+            }
+            else {
+                this.drawAnimationNextTurn()
+            }
+        }
+        this.keysPressed()
+        window.requestAnimationFrame(this.updateGame);
+    }
+
     isEndGame = () =>{
-        console.log(this.worms.length)
         if(this.worms.length===0){
             this.endGame = true
             this.contex.fillStyle = 'grey'
             this.contex.fillRect(0,100,this.canvas.width,300)
             this.contex.font = '100px Arial black'
             this.contex.fillStyle = 'white'
-            this.contex.fillText(`DRAW`,500,280)
+            this.contex.fillText(`DRAW`,550,280)
+            this.contex.font = '30px Arial black'
+            this.contex.fillText(`PRESS ENTER TO RESTART`,500,350)
+
         }
         else if(this.worms.length===1){
             this.endGame = true
@@ -296,9 +309,13 @@ class Game{
             this.contex.font = '100px Arial black'
             this.contex.fillStyle = 'white'
             this.contex.fillText(`TEAM ${(this.worms[0].team).toUpperCase()} WIN`,400,280)
+            this.contex.font = '30px Arial black'
+            this.contex.fillText(`PRESS ENTER TO RESTART`,550,350)
         }    
     }
+    
 }
+
 
 
 //MAP TERRAIN AND BACKGROUND
@@ -441,7 +458,7 @@ class Worm extends Component{
         this.vBullet = 9
         this.wormImage = new Image()
         this.gunImage = new Image()
-        this.vPadraoLateral = 10
+        this.vPadraoLateral = 1
     }
 
     start = () =>{
@@ -456,7 +473,7 @@ class Worm extends Component{
         if(this.front==='right'){
             this.contex.drawImage(this.wormImage,this.x,this.y,this.width,this.height);
             this.contex.setTransform(1, 0, 0, 1, 0, 0); 
-            if(this.x ===this.previousX || !this.isMoving()){
+            if(this.x ===this.previousX || this.Vy!==0){
                 this.contex.translate(this.centerX,this.centerY)
                 this.contex.rotate(-this.angle * Math.PI / 180);
                 this.contex.translate(-this.centerX,-this.centerY)
@@ -468,7 +485,7 @@ class Worm extends Component{
             this.contex.scale(-1,1)
             this.contex.drawImage(this.wormImage,-this.width-this.x,this.y,this.width,this.height);
             this.contex.setTransform(1, 0, 0, 1, 0, 0);
-            if(this.x ===this.previousX || !this.isMoving()){
+            if(this.x ===this.previousX || this.Vy!==0){
                 this.contex.translate(this.centerX,this.centerY)
                 this.contex.rotate(this.angle * Math.PI / 180);
                 this.contex.translate(-this.centerX,-this.centerY)
@@ -681,7 +698,7 @@ class Bullet extends Component{
         this.color ='pink'
         this.vExplosion = 2
         this.rExplosion = 30
-        this.damage = 1000
+        this.damage = 50
         this.bulletImage = new Image()
         this.center()
     }
@@ -694,8 +711,36 @@ class Bullet extends Component{
 
 }
 
+
+//Initialization canvas and contex
+const globalCanvas = document.createElement('canvas');
+globalCanvas.width = 1500;
+globalCanvas.height = 500;
+document.getElementById('game-board').appendChild(globalCanvas);
+
+const globalContex1 = globalCanvas.getContext('2d');
+
+let startImage = new Image()
+startImage.src = './image/telaStart.jpg'
+startImage.onload = () =>{
+    globalContex1.drawImage(startImage,0,0,globalCanvas.width,globalCanvas.height);
+    globalContex1.fillStyle = "#FF3901"
+    globalContex1.font = '100px Droid Sans black'
+    globalContex1.fillText(`MY`,350,170)
+    globalContex1.fillStyle = "#140201"
+    globalContex1.font = '50px Arial Sans black'
+    globalContex1.fillText(`PRESS ENTER TO BEGIN`,400,400)
+}
+
 game = new Game(globalCanvas)
 
-game.start()
-
-window.requestAnimationFrame(game.updateGame);
+keysUsed = {}
+document.onkeydown = function(e){
+    keysUsed[e.keyCode] = e.type =='keydown'
+    if(keysUsed[13] && game.endGame){
+        game.start()
+    }
+  }
+document.onkeyup = function(e){
+    keysUsed[e.keyCode] = e.type =='keydown'
+}
