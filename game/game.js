@@ -25,8 +25,8 @@ class Game{
         this.canvas = canvas;
         this.contex = canvas.getContext('2d');
         this.atomization = 500
-        this.playerWidth = 20
-        this.playerHeigth = 40
+        this.playerWidth = 10
+        this.playerHeigth = 20
         this.gravity = 0.1
         this.drag = 0.1
         this.frames = {principal:0,turn:0,passTurn:0,explosion:0};
@@ -37,14 +37,17 @@ class Game{
         this.coefficientOfLoss = 0.5
         this.playerInitX = [100,400,400]
         this.playerInitY = 400
+        this.timeStampNow = 0
+        this.timeStampLast = 0
+        this.executionTime = 0
     }
 
     start = () =>{
         this.gameArea = new GameArea(this.canvas,this.playerInitY+this.playerHeigth,500)
         this.gameArea.start()
         this.startWorms()
+        this.timeStampNow=new Date().getTime()
         this.drawTurnTime()
-        this.interval()
     }
 
     startWorms = () =>{
@@ -125,6 +128,9 @@ class Game{
     }
 
     updateGame = () =>{
+        this.executionTime =new Date().getTime() 
+        this.timeStampLast = this.timeStampNow
+        this.timeStampNow = new Date().getTime()
         this.passTurn()
         this.clear()
         this.keysPressed()
@@ -133,6 +139,9 @@ class Game{
         this.frames.principal++
         this.drawTurnTime()
         this.drawFace()
+        this.executionTime -= new Date().getTime()
+        window.requestAnimationFrame(this.updateGame);
+
     }
 
     interval = () =>{
@@ -197,7 +206,11 @@ class Game{
     drawTurnTime = () =>{
         this.contex.font = '30px Arial black'
         this.contex.fillStyle = this.wormInUse.team
-        this.contex.fillText(`${this.frames.principal/100}`,400,100)
+        this.contex.fillText(`${parseFloat(10-this.frames.principal/60).toFixed(2)}`,400,100)
+        this.contex.font = '15px Robot black'
+        this.contex.fillStyle = 'white'
+        this.contex.fillText(`fps:${parseInt(1000/(this.timeStampNow-this.timeStampLast))}`,950,20)
+
 
     }
     drawAnimations = () => {
@@ -321,7 +334,7 @@ class Component{
         this.center()
         this.newVelocity(ax,ay)
     }
-
+    
     newVelocity = (ax,ay) =>{
         this.Vx += this.ax
         this.Vy += this.ay
@@ -371,9 +384,10 @@ class Worm extends Component{
         this.type = 'worm'
         this.angle = 0
         this.life = 100
-        this.stamina = 100
-        this.bulletSize = 10
+        this.stamina = 1000000
+        this.bulletSize = 5
         this.inUse = false
+        this.vBullet = 7
     }
 
     start = () =>{
@@ -425,7 +439,6 @@ class Worm extends Component{
 
     moveRight =() =>{
         if(this.stamina>0){
-            console.log('entrou')
             this.stamina-=0.5
             if(this.front ==='right'){
                 this.Vx = 1
@@ -459,16 +472,13 @@ class Worm extends Component{
     }
     
     attack = () =>{
-        console.log('vai atacar')
         if(!this.isMoving()){
             if(this.frames % 50 ===0 && this.numberBullets>0){
-                console.log('atacou')
-                const vInicial = 8
                 if(this.front ==='right'){
-                    this.bullets.push(new Bullet(this.right(),this.centerY,vInicial*Math.cos(this.angle/180*Math.PI),-vInicial*Math.sin(this.angle/180*Math.PI),this.bulletSize,this.bulletSize,this.canvas))
+                    this.bullets.push(new Bullet(this.right(),this.centerY,this.vBullet*Math.cos(this.angle/180*Math.PI),-this.vBullet*Math.sin(this.angle/180*Math.PI),this.bulletSize,this.bulletSize,this.canvas))
                 }
                 else{
-                    this.bullets.push(new Bullet(this.left()-this.bulletSize,this.centerY,-vInicial*Math.cos(this.angle/180*Math.PI),-vInicial*Math.sin(this.angle/180*Math.PI),this.bulletSize,this.bulletSize,this.canvas))
+                    this.bullets.push(new Bullet(this.left()-this.bulletSize,this.centerY,-this.vBullet*Math.cos(this.angle/180*Math.PI),-this.vBullet*Math.sin(this.angle/180*Math.PI),this.bulletSize,this.bulletSize,this.canvas))
                 }
                 this.numberBullets--
             }
@@ -507,6 +517,10 @@ class Worm extends Component{
         if(this.Vy>-2){
             this.Vy=0;
         }
+        else if(Math.abs(this.Vy)==0.2 && this.isArrowRightorLeft() && this.inUse && 0<this.stamina)
+        {
+            this.Vy=this.Vy
+        }
         else {
             this.Vy = -this.Vy*coefficientOfLoss
         }
@@ -528,6 +542,10 @@ class Worm extends Component{
         if(this.Vy<2){
             this.Vy=0;
         }
+        else if(Math.abs(this.Vy)==0.2 && this.isArrowRightorLeft() && this.inUse && 0<this.stamina)
+        {
+            this.Vy=this.Vy
+        }
         else {
             this.Vy = -this.Vy*coefficientOfLoss
         }   
@@ -538,7 +556,8 @@ class Worm extends Component{
             this.Vy = -this.Vy*coefficientOfLoss
         }
         else if(Math.abs(this.Vx)===1){
-            this.Vy=-0.1;
+            console.log('ENTROU direita')
+            this.Vy=-0.2;
         }
         else{
             this.Vx=0
@@ -551,7 +570,7 @@ class Worm extends Component{
             this.Vy = -this.Vy*coefficientOfLoss
         }
         else if(Math.abs(this.Vx)===1){
-            this.Vy=-0.1;
+            this.Vy=-0.2;
         }
         else{
             this.Vx=0
@@ -565,9 +584,9 @@ class Bullet extends Component{
         super(x,y,Vx,Vy,width,height,canvas);
         this.type = 'bullet'
         this.color ='pink'
-        this.vExplosion = 1
-        this.rExplosion = 50
-        this.damage = 50
+        this.vExplosion = 2
+        this.rExplosion = 25
+        this.damage = 30
     }
 
     drawBullet = () =>{
@@ -581,3 +600,5 @@ class Bullet extends Component{
 game = new Game(globalCanvas)
 
 game.start()
+
+window.requestAnimationFrame(game.updateGame);
