@@ -277,9 +277,22 @@ class Game{
     isEndGame = () =>{
         if(this.worms.length===1){
             this.endGame = true
-            this.contex.style = this.worms[0].team
-            this.contex.fillRect(0,200,1000,200)
+            this.contex.fillStyle = this.worms[0].team
+            this.contex.fillRect(0,100,this.canvas.width,300)
+            this.contex.font = '100px Arial black'
+            this.contex.fillStyle = 'white'
+            this.contex.fillText(`TEAM ${(this.worms[0].team).toUpperCase()} WIN`,400,280)
+    
+        } 
+        else if(this.worms.length===0){
+            this.endGame = true
+            this.contex.fillStyle = 'grey'
+            this.contex.fillRect(0,100,this.canvas.width,300)
+            this.contex.font = '100px Arial black'
+            this.contex.fillStyle = 'white'
+            this.contex.fillText(`DRAW`,500,280)
         }
+        
     }
 }
 
