@@ -35,7 +35,7 @@ class Game{
         this.teams = ['red','blue']
         this.worms = []
         this.coefficientOfLoss = 0.5
-        this.playerInitX = [100,1400]
+        this.playerInitX = [100,200]
         this.playerInitY = 380
         this.timeStampNow = 0
         this.timeStampLast = 0
@@ -72,9 +72,17 @@ class Game{
                 this.touchEffectsTerrain(this.worms[i],bullet,idx)
                 this.touchEffectsPlayer(this.worms[i],bullet,idx)
             })
-            this.worms[i].drawWorm()
+        }
+
+        let notDead = []
+        for(let i=0;i<this.worms.length;i++){
+            if(this.worms[i].life>0){
+                this.worms[i].drawWorm()
+                notDead.push(this.worms[i])
+            }
         }
         this.wormInUse.drawAim();
+        this.worms = notDead
     }
 
     drawFace =() =>{
@@ -139,19 +147,21 @@ class Game{
     }
 
     updateGame = () =>{
-        this.executionTime =new Date().getTime() 
-        this.timeStampLast = this.timeStampNow
-        this.timeStampNow = new Date().getTime()
-        this.passTurn()
-        this.clear()
-        this.keysPressed()
-        this.gameArea.drawGameArea()
-        this.drawWorms()
-        this.frames.principal++
-        this.drawTurnTime()
-        this.drawFace()
-        this.executionTime -= new Date().getTime()
-        this.isEndGame()
+        if(!this.endGame && !this.isPause){
+            this.executionTime =new Date().getTime() 
+            this.timeStampLast = this.timeStampNow
+            this.timeStampNow = new Date().getTime()
+            this.passTurn()
+            this.clear()
+            this.keysPressed()
+            this.gameArea.drawGameArea()
+            this.drawWorms()
+            this.frames.principal++
+            this.drawTurnTime()
+            this.drawFace()
+            this.executionTime -= new Date().getTime()
+            this.isEndGame()
+        }
         window.requestAnimationFrame(this.updateGame);
 
     }
@@ -254,7 +264,6 @@ class Game{
         }
         this.gameArea.terrains= notDestroyed
         temporario = this.worms
-        let notDead = []
         for(let i = 0;i<temporario.length;i++){
 
             let xAparente = (temporario[i].centerX-bullet.centerX)
@@ -268,23 +277,11 @@ class Game{
             else if(distanceToBulletSquare===0){
                 temporario[i].life -= bullet.damage 
             }
-            if(temporario[i].life>0){
-                notDead.push(temporario[i])
-            }
         }
-        this.worms = notDead
     }
     isEndGame = () =>{
-        if(this.worms.length===1){
-            this.endGame = true
-            this.contex.fillStyle = this.worms[0].team
-            this.contex.fillRect(0,100,this.canvas.width,300)
-            this.contex.font = '100px Arial black'
-            this.contex.fillStyle = 'white'
-            this.contex.fillText(`TEAM ${(this.worms[0].team).toUpperCase()} WIN`,400,280)
-    
-        } 
-        else if(this.worms.length===0){
+        console.log(this.worms.length)
+        if(this.worms.length===0){
             this.endGame = true
             this.contex.fillStyle = 'grey'
             this.contex.fillRect(0,100,this.canvas.width,300)
@@ -292,7 +289,14 @@ class Game{
             this.contex.fillStyle = 'white'
             this.contex.fillText(`DRAW`,500,280)
         }
-        
+        else if(this.worms.length===1){
+            this.endGame = true
+            this.contex.fillStyle = this.worms[0].team
+            this.contex.fillRect(0,100,this.canvas.width,300)
+            this.contex.font = '100px Arial black'
+            this.contex.fillStyle = 'white'
+            this.contex.fillText(`TEAM ${(this.worms[0].team).toUpperCase()} WIN`,400,280)
+        }    
     }
 }
 
@@ -437,6 +441,7 @@ class Worm extends Component{
         this.vBullet = 9
         this.wormImage = new Image()
         this.gunImage = new Image()
+        this.vPadraoLateral = 10
     }
 
     start = () =>{
@@ -521,11 +526,11 @@ class Worm extends Component{
             if(this.Vx<0){
                 this.Vx+=0.2
             }
-            else if(this.Vx>1){
+            else if(this.Vx>this.vPadraoLateral){
                 this.Vx +=0.01
             }
             else{
-                this.Vx = 1
+                this.Vx = this.vPadraoLateral
             }
         }
     }
@@ -539,11 +544,11 @@ class Worm extends Component{
             if(this.Vx>0){
                 this.Vx-=0.2
             }
-            else if(this.Vx<-1){
+            else if(this.Vx<-this.vPadraoLateral){
                 this.Vx -=0.01
             }
             else{
-                this.Vx = -1
+                this.Vx = -this.vPadraoLateral
             }
 
         }
@@ -676,7 +681,7 @@ class Bullet extends Component{
         this.color ='pink'
         this.vExplosion = 2
         this.rExplosion = 30
-        this.damage = 50
+        this.damage = 1000
         this.bulletImage = new Image()
         this.center()
     }
