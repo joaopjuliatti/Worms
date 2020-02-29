@@ -35,11 +35,12 @@ class Game{
         this.teams = ['red','green']
         this.worms = []
         this.coefficientOfLoss = 0.5
-        this.playerInitX = [100,400,400]
-        this.playerInitY = 400
+        this.playerInitX = [100,900]
+        this.playerInitY = 420
         this.timeStampNow = 0
         this.timeStampLast = 0
         this.executionTime = 0
+        this.turnTime = 600
     }
 
     start = () =>{
@@ -117,8 +118,13 @@ class Game{
     }
 
     keysPressed = () =>{
-        if(keysUsed[37]) this.wormInUse.moveLeft()
-        if(keysUsed[39]) this.wormInUse.moveRight()
+        if(keysUsed[37] && keysUsed[39]){
+            console.log('entrou')
+        }
+        else{
+            if(keysUsed[37]) this.wormInUse.moveLeft()
+            if(keysUsed[39]) this.wormInUse.moveRight()
+        }
         if(keysUsed[32]) this.wormInUse.jump()
         if(keysUsed[90]) this.wormInUse.attack()
         if(!this.wormInUse.isMoving()){
@@ -144,10 +150,6 @@ class Game{
 
     }
 
-    interval = () =>{
-        setInterval(this.updateGame,1)
-    }
-
     checkIfTouchTerrain = (component) =>{
         return  this.gameArea.terrains.reduce((acc,terrain)=>{
             const sideTouch = component.checkTouch(terrain)
@@ -169,6 +171,14 @@ class Game{
             if(touchVector[0]) component.touchTop(this.drag,this.coefficientOfLoss,true)
             if(touchVector[1]) component.touchRight(this.coefficientOfLoss,true)
             if(touchVector[3]) component.touchLeft(this.coefficientOfLoss,true)
+            if(component.left()<=0) {
+                component.touchLeft(this.coefficientOfLoss,true)
+                component.touchTop(this.drag,this.coefficientOfLoss,true)
+            }
+            if(component.right()>=1000) {
+                component.touchRight(this.coefficientOfLoss,true)
+                component.touchTop(this.drag,this.coefficientOfLoss,true)
+            }
         }
         else {
             if(touchVector[0]||touchVector[1]||touchVector[2]||touchVector[3]){
@@ -187,7 +197,7 @@ class Game{
     }
 
     passTurn = () =>{
-        if(this.frames.principal > 600 && !this.wormInUse.isMoving()){
+        if(this.frames.principal >=this.turnTime && !this.wormInUse.isMoving()){
             this.turn++
             this.nextWorm()
             this.frames.principal = 0
@@ -206,7 +216,7 @@ class Game{
     drawTurnTime = () =>{
         this.contex.font = '30px Arial black'
         this.contex.fillStyle = this.wormInUse.team
-        this.contex.fillText(`${parseFloat(10-this.frames.principal/60).toFixed(2)}`,400,100)
+        this.contex.fillText(`${parseFloat((this.turnTime-this.frames.principal)/60).toFixed(2)}`,400,100)
         this.contex.font = '15px Robot black'
         this.contex.fillStyle = 'white'
         this.contex.fillText(`fps:${parseInt(1000/(this.timeStampNow-this.timeStampLast))}`,950,20)
@@ -228,15 +238,13 @@ class Game{
         for(let i = 0;i<temporario.length;i++){
             let distanceToBulletSquare = (temporario[i].centerX-bullet.centerX)**2+(temporario[i].centerY-bullet.centerY)**2
             if(distanceToBulletSquare>bullet.rExplosion**2 && distanceToBulletSquare<(bullet.rExplosion+5)**2) {
-                temporario[i].color='yellow'
+                temporario[i].color='#A2A2A2'
                 notDestroyed.push(temporario[i])
             }
             else if(distanceToBulletSquare>(bullet.rExplosion+5)**2) {
                 notDestroyed.push(temporario[i])
             }
-            else{
-                console.log('entrou')
-            }
+
         }
         this.gameArea.terrains= notDestroyed
         temporario = this.worms
@@ -245,11 +253,9 @@ class Game{
             let xAparente = (temporario[i].centerX-bullet.centerX)
             let yAparente = (temporario[i].centerY-bullet.centerY)
             let distanceToBulletSquare = xAparente**2+yAparente**2
-            console.log(distanceToBulletSquare**(1/2),temporario[i].team)
             if(0<distanceToBulletSquare && distanceToBulletSquare<bullet.rExplosion**2){
                 temporario[i].Vx= -bullet.vExplosion*xAparente*(distanceToBulletSquare**(-1/2)-bullet.rExplosion**(-1/2))
                 temporario[i].Vy= -bullet.vExplosion*yAparente*(distanceToBulletSquare**(-1/2)-bullet.rExplosion**(-1/2))
-                console.log((bullet.damage*(1-(distanceToBulletSquare**(1/2))/(bullet.rExplosion))),temporario[i].team)
                 temporario[i].life -= bullet.damage*(1-(distanceToBulletSquare**(1/2))/(bullet.rExplosion)) 
             }
             else if(distanceToBulletSquare===0){
@@ -268,9 +274,14 @@ class GameArea{
         this.atomization = atomization;
         this.terrains = [];
         this.initY = initY;
+        this.backGroundImage = new Image()
     }
 
     start = () =>{
+        this.backGroundImage.src= './image/background.jpg'  
+        this.backGroundImage.onload = () =>{
+            this.drawGameArea()
+        }
         const widthAtom = this.canvas.width/this.atomization
         const numberRows = (this.canvas.height - this.initY)/widthAtom
         for(let i = 0;i<this.atomization;i++){
@@ -282,8 +293,7 @@ class GameArea{
     }
 
     drawGameArea = () =>{
-        this.contex.fillStyle = "black"
-        this.contex.fillRect(0,0,1000,500);
+        this.contex.drawImage(this.backGroundImage,0,0,this.canvas.width,this.canvas.height);
         for(let i = 0;i<this.terrains.length;i++){
             this.terrains[i].draw();
         }
@@ -366,7 +376,7 @@ class Terrain extends Component{
     constructor(x,y,Vx,Vy,width,height,canvas){
         super(x,y,Vx,Vy,width,height,canvas);
         this.type = 'terrain'
-        this.color = 'brown'
+        this.color = '#555555'
     }
 
     draw = () =>{
@@ -383,7 +393,7 @@ class Worm extends Component{
         super(x,y,Vx,Vy,width,height,canvas);
         this.bullets = [];
         this.gravity = 0.1
-        this.numberBullets = 10
+        this.numberBullets = 1
         this.numberJumps = 1
         this.team = team
         this.front = 'right'
@@ -393,7 +403,7 @@ class Worm extends Component{
         this.stamina = 100
         this.bulletSize = 5
         this.inUse = false
-        this.vBullet = 7
+        this.vBullet = 9
     }
 
     start = () =>{
@@ -430,9 +440,10 @@ class Worm extends Component{
     beginTurn(){
         this.frames = 0;
         this.bullets =[];
-        this.numberBullets=10;
-        this.numberJumps = 2
+        this.numberBullets=1;
+        this.numberJumps = 1
         this.angle = 0
+        this.stamina =100
 
     }
 
@@ -444,11 +455,11 @@ class Worm extends Component{
     }
 
     moveRight =() =>{
+        if(this.front ==='left'){
+            this.front = 'right'
+        }
         if(this.stamina>0){
-            this.stamina-=0.5
-            if(this.front ==='left'){
-                this.front = 'right'
-            }
+            this.stamina-=0.8
             if(this.Vx<0){
                 this.Vx+=0.2
             }
@@ -462,11 +473,11 @@ class Worm extends Component{
     }
 
     moveLeft =() =>{
+        if(this.front==='right'){
+            this.front = 'left'
+        }
         if(this.stamina>0){
-            this.stamina-=0.5
-            if(this.front==='right'){
-                this.front = 'left'
-            }
+            this.stamina-=0.8
             if(this.Vx>0){
                 this.Vx-=0.2
             }
@@ -516,6 +527,9 @@ class Worm extends Component{
     }
 
     isArrowRightorLeft = () =>{
+        if(keysUsed[37] && keysUsed[39]) 
+        { return false }
+        
         return keysUsed[37] || keysUsed[39]
     }
 
@@ -570,12 +584,12 @@ class Worm extends Component{
         }   
     }
     touchRight = (coefficientOfLoss) =>{
+        console.log(this.Vx)    
         this.x = this.previousX
         if(this.Vx>1){
-            this.Vy = -this.Vy*coefficientOfLoss
+            this.Vx = -this.Vx*coefficientOfLoss
         }
         else if(Math.abs(this.Vx)===1){
-            console.log('ENTROU direita')
             this.Vy=-0.2;
         }
         else{
@@ -585,8 +599,9 @@ class Worm extends Component{
     }
     touchLeft = (coefficientOfLoss) =>{
         this.x = this.previousX
+        console.log(this.Vx)
         if(this.Vx<-1){
-            this.Vy = -this.Vy*coefficientOfLoss
+            this.Vx = -this.Vx*coefficientOfLoss
         }
         else if(Math.abs(this.Vx)===1){
             this.Vy=-0.2;
