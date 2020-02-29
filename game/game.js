@@ -60,12 +60,16 @@ class Game{
     drawWorms = () =>{
         for(let i=0;i<this.worms.length;i++){
             this.worms[i].newPos(0,this.gravity)
-            this.touchEffectsTerrain(this.worms[i],i)
+            this.touchEffectsTerrain(false,this.worms[i],i)
+            this.worms[i].bullets.forEach((bullet,idx) => {
+                this.touchEffectsTerrain(this.worms[i],bullet,idx)
+                this.touchEffectsPlayer(this.worms[i],bullet,idx)
+            })
             this.worms[i].drawWorm()
         }
         this.wormInUse.drawAim();
     }
-    
+
     drawFace =() =>{
         this.contex.beginPath()
         this.contex.strokeStyle = 'white'
@@ -128,10 +132,6 @@ class Game{
         this.drawWorms()
         this.frames.principal++
         this.drawTurnTime()
-        this.wormInUse.bullets.forEach((bullet,idx) => {
-            this.touchEffectsTerrain(bullet,idx)
-            this.touchEffectsPlayer(bullet,idx)
-        });
         this.drawFace()
     }
 
@@ -147,15 +147,13 @@ class Game{
     }
 
     checkIfTouchPlayer = (component) => {
-        for(let i = 0;i<this.worms.length;i++){
-            const sideTouch = component.checkTouch(this.worms[i])
-            const touchPlayer = sideTouch[0] || sideTouch[1] || sideTouch[2] || sideTouch[3]
-            if(touchPlayer) return true
-        }
-        return false
+        return !this.worms.every((worm) => {
+            const sideTouch = worm.checkTouch(component)
+            return  !(sideTouch[0] || sideTouch[1] || sideTouch[2] || sideTouch[3])
+        })
     }
 
-    touchEffectsTerrain = (component,idx)=>{
+    touchEffectsTerrain = (worm=false,component,idx)=>{
         const touchVector = this.checkIfTouchTerrain(component)
         if(component.type==='worm'){
             if(touchVector[2]) component.touchBottom(this.drag,this.coefficientOfLoss,true)
@@ -165,16 +163,16 @@ class Game{
         }
         else {
             if(touchVector[0]||touchVector[1]||touchVector[2]||touchVector[3]){
-                this.wormInUse.bullets.splice(idx,1)
+                worm.bullets.splice(idx,1)
                 this.explosion(component)
             }
         }
     }
 
-    touchEffectsPlayer = (bullet,idx)=>{
+    touchEffectsPlayer = (worm,bullet,idx)=>{
         const touchPlayer = this.checkIfTouchPlayer(bullet)
         if(touchPlayer){
-            this.wormInUse.bullets.splice(idx,1)
+            worm.bullets.splice(idx,1)
             this.explosion(bullet)
         } 
     }
@@ -426,20 +424,27 @@ class Worm extends Component{
     }
 
     moveRight =() =>{
-        if(this.front ==='right'){
-            this.Vx = 1
-        }else{
-            this.front = 'right'
-            this.Vx = 1
+        if(this.stamina>0){
+            console.log('entrou')
+            this.stamina-=0.5
+            if(this.front ==='right'){
+                this.Vx = 1
+            }else{
+                this.front = 'right'
+                this.Vx = 1
+            }
         }
     }
 
     moveLeft =() =>{
-        if(this.front==='right'){
-            this.front = 'left'
-            this.Vx = -1
-        }else{
-            this.Vx = -1
+        if(this.stamina>0){
+            this.stamina-=0.5
+            if(this.front==='right'){
+                this.front = 'left'
+                this.Vx = -1
+            }else{
+                this.Vx = -1
+            }
         }
     }
     angleUp = () =>{
@@ -454,8 +459,10 @@ class Worm extends Component{
     }
     
     attack = () =>{
+        console.log('vai atacar')
         if(!this.isMoving()){
             if(this.frames % 50 ===0 && this.numberBullets>0){
+                console.log('atacou')
                 const vInicial = 8
                 if(this.front ==='right'){
                     this.bullets.push(new Bullet(this.right(),this.centerY,vInicial*Math.cos(this.angle/180*Math.PI),-vInicial*Math.sin(this.angle/180*Math.PI),this.bulletSize,this.bulletSize,this.canvas))
@@ -489,7 +496,7 @@ class Worm extends Component{
         if(Math.abs(this.Vx)>1){
             this.Vx = this.Vx - Math.sign(this.Vx)*drag
         }
-        else if(Math.abs(this.Vx)<1 && this.isArrowRightorLeft() && this.inUse)
+        else if(Math.abs(this.Vx)<1 && this.isArrowRightorLeft() && this.inUse && 0<this.stamina)
         {
             this.Vx=this.Vx
         }
@@ -510,7 +517,7 @@ class Worm extends Component{
         if(Math.abs(this.Vx)>1){
             this.Vx = this.Vx - Math.sign(this.Vx)*drag
         }
-        else if(Math.abs(this.Vx)<=1 && this.isArrowRightorLeft() && this.inUse)
+        else if(Math.abs(this.Vx)<=1 && this.isArrowRightorLeft() && this.inUse && 0<this.stamina)
         {
             this.Vx=this.Vx
         }
