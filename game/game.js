@@ -384,7 +384,7 @@ class Worm extends Component{
         this.type = 'worm'
         this.angle = 0
         this.life = 100
-        this.stamina = 1000000
+        this.stamina = 100
         this.bulletSize = 5
         this.inUse = false
         this.vBullet = 7
@@ -440,10 +440,16 @@ class Worm extends Component{
     moveRight =() =>{
         if(this.stamina>0){
             this.stamina-=0.5
-            if(this.front ==='right'){
-                this.Vx = 1
-            }else{
+            if(this.front ==='left'){
                 this.front = 'right'
+            }
+            if(this.Vx<0){
+                this.Vx+=0.2
+            }
+            else if(this.Vx>1){
+                this.Vx +=0.01
+            }
+            else{
                 this.Vx = 1
             }
         }
@@ -454,10 +460,17 @@ class Worm extends Component{
             this.stamina-=0.5
             if(this.front==='right'){
                 this.front = 'left'
-                this.Vx = -1
-            }else{
+            }
+            if(this.Vx>0){
+                this.Vx-=0.2
+            }
+            else if(this.Vx<-1){
+                this.Vx -=0.01
+            }
+            else{
                 this.Vx = -1
             }
+
         }
     }
     angleUp = () =>{
@@ -473,7 +486,7 @@ class Worm extends Component{
     
     attack = () =>{
         if(!this.isMoving()){
-            if(this.frames % 50 ===0 && this.numberBullets>0){
+            if(this.numberBullets>0){
                 if(this.front ==='right'){
                     this.bullets.push(new Bullet(this.right(),this.centerY,this.vBullet*Math.cos(this.angle/180*Math.PI),-this.vBullet*Math.sin(this.angle/180*Math.PI),this.bulletSize,this.bulletSize,this.canvas))
                 }
@@ -585,7 +598,7 @@ class Bullet extends Component{
         this.type = 'bullet'
         this.color ='pink'
         this.vExplosion = 2
-        this.rExplosion = 25
+        this.rExplosion = 30
         this.damage = 30
     }
 
