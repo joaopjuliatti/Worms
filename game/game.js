@@ -11,7 +11,7 @@ document.onkeyup = function(e){
 
 //Initialization canvas and contex
 const globalCanvas = document.createElement('canvas');
-globalCanvas.width = 1000;
+globalCanvas.width = 1500;
 globalCanvas.height = 500;
 document.getElementById('game-board').appendChild(globalCanvas);
 
@@ -25,18 +25,18 @@ class Game{
         this.canvas = canvas;
         this.contex = canvas.getContext('2d');
         this.atomization = 500
-        this.playerWidth = 10
-        this.playerHeigth = 20
+        this.playerWidth = 20
+        this.playerHeigth = 30
         this.gravity = 0.1
         this.drag = 0.1
         this.frames = {principal:0,turn:0,passTurn:0,explosion:0};
         this.animations = []
         this.turn = 1
-        this.teams = ['red','green']
+        this.teams = ['red','blue']
         this.worms = []
         this.coefficientOfLoss = 0.5
-        this.playerInitX = [100,900]
-        this.playerInitY = 420
+        this.playerInitX = [100,1400]
+        this.playerInitY = 380
         this.timeStampNow = 0
         this.timeStampLast = 0
         this.executionTime = 0
@@ -118,8 +118,9 @@ class Game{
     }
 
     keysPressed = () =>{
+
+        
         if(keysUsed[37] && keysUsed[39]){
-            console.log('entrou')
         }
         else{
             if(keysUsed[37]) this.wormInUse.moveLeft()
@@ -175,7 +176,7 @@ class Game{
                 component.touchLeft(this.coefficientOfLoss,true)
                 component.touchTop(this.drag,this.coefficientOfLoss,true)
             }
-            if(component.right()>=1000) {
+            if(component.right()>=this.canvas.width) {
                 component.touchRight(this.coefficientOfLoss,true)
                 component.touchTop(this.drag,this.coefficientOfLoss,true)
             }
@@ -197,7 +198,7 @@ class Game{
     }
 
     passTurn = () =>{
-        if(this.frames.principal >=this.turnTime && !this.wormInUse.isMoving()){
+        if((this.frames.principal >=this.turnTime ||(keysUsed[13] && keysUsed[18]))&& !this.wormInUse.isMoving()){
             this.turn++
             this.nextWorm()
             this.frames.principal = 0
@@ -401,19 +402,46 @@ class Worm extends Component{
         this.angle = 0
         this.life = 100
         this.stamina = 100
-        this.bulletSize = 5
+        this.bulletSize = 10
         this.inUse = false
         this.vBullet = 9
+        this.wormImage = new Image()
+        this.gunImage = new Image()
     }
 
     start = () =>{
         this.newPos(0,0)
+        this.wormImage.src =`./image/soldie${this.team}.png`
+        this.gunImage.src =`./image/gun.png`
+        
         this.drawWorm()
     }
 
     drawWorm = () =>{
-        this.contex.fillStyle = this.team
-        this.contex.fillRect(this.x,this.y,this.width,this.height);
+        if(this.front==='right'){
+            this.contex.drawImage(this.wormImage,this.x,this.y,this.width,this.height);
+            this.contex.setTransform(1, 0, 0, 1, 0, 0); 
+            if(this.x ===this.previousX || !this.isMoving()){
+                this.contex.translate(this.centerX,this.centerY)
+                this.contex.rotate(-this.angle * Math.PI / 180);
+                this.contex.translate(-this.centerX,-this.centerY)
+                this.contex.drawImage(this.gunImage,this.x,this.y+6,this.width,this.width);
+            }
+            this.contex.setTransform(1, 0, 0, 1, 0, 0);
+        }
+        else{
+            this.contex.scale(-1,1)
+            this.contex.drawImage(this.wormImage,-this.width-this.x,this.y,this.width,this.height);
+            this.contex.setTransform(1, 0, 0, 1, 0, 0);
+            if(this.x ===this.previousX || !this.isMoving()){
+                this.contex.translate(this.centerX,this.centerY)
+                this.contex.rotate(this.angle * Math.PI / 180);
+                this.contex.translate(-this.centerX,-this.centerY)
+                this.contex.scale(-1,1)
+                this.contex.drawImage(this.gunImage,-this.width-this.x,this.y+6,this.width,this.width);
+            }
+            this.contex.setTransform(1, 0, 0, 1, 0, 0);
+        }
         this.frames++;    
         this.drawBullets() 
         this.drawLifeBar()
@@ -421,7 +449,7 @@ class Worm extends Component{
     drawAim = () =>{
         if(!this.isMoving()){
             this.contex.beginPath();
-            this.contex.strokeStyle='white';
+            this.contex.strokeStyle='yellow';
             if(this.front ==='right') this.contex.arc(this.centerX,this.centerY, 40,2*Math.PI-this.angle/180*Math.PI,2*Math.PI-this.angle/180*Math.PI)
             else this.contex.arc(this.centerX,this.centerY, 40,Math.PI+this.angle/180*Math.PI,Math.PI+this.angle/180*Math.PI)
             this.contex.lineTo(this.centerX, this.centerY);
@@ -584,7 +612,6 @@ class Worm extends Component{
         }   
     }
     touchRight = (coefficientOfLoss) =>{
-        console.log(this.Vx)    
         this.x = this.previousX
         if(this.Vx>1){
             this.Vx = -this.Vx*coefficientOfLoss
@@ -599,7 +626,6 @@ class Worm extends Component{
     }
     touchLeft = (coefficientOfLoss) =>{
         this.x = this.previousX
-        console.log(this.Vx)
         if(this.Vx<-1){
             this.Vx = -this.Vx*coefficientOfLoss
         }
@@ -621,12 +647,14 @@ class Bullet extends Component{
         this.vExplosion = 2
         this.rExplosion = 30
         this.damage = 30
+        this.bulletImage = new Image()
         this.center()
     }
 
     drawBullet = () =>{
+        this.bulletImage.src ='./image/grenade.png'
         this.contex.fillStyle = 'pink'
-        this.contex.fillRect(this.x,this.y,this.width,this.height);
+        this.contex.drawImage(this.bulletImage,this.x,this.y,this.width,this.height);
     }
 
 }
