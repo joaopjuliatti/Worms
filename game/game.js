@@ -458,7 +458,7 @@ class Worm extends Component{
         this.vBullet = 9
         this.wormImage = new Image()
         this.gunImage = new Image()
-        this.vPadraoLateral = 1
+        this.vPadraoLateral = 5 
     }
 
     start = () =>{
