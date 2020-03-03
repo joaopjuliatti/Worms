@@ -86,7 +86,7 @@ class Game{
         this.contex.closePath()
         this.contex.stroke()
         this.contex.fillStyle = this.wormInUse.team
-        this.faceImage.src = `./image/soldie${this.wormInUse.team}face.png`
+        this.faceImage.src = `./game/image/soldie${this.wormInUse.team}face.png`
         this.contex.drawImage(this.faceImage,40,40,40,40);
         this.drawBigLifeBar()
         this.drawBigStaminaBar()
@@ -330,7 +330,7 @@ class GameArea{
     }
 
     start = () =>{
-        this.backGroundImage.src= './image/background.jpg'  
+        this.backGroundImage.src= './game/image/background.jpg'  
         this.backGroundImage.onload = () =>{
             this.drawGameArea()
         }
@@ -463,8 +463,8 @@ class Worm extends Component{
 
     start = () =>{
         this.newPos(0,0)
-        this.wormImage.src =`./image/soldie${this.team}.png`
-        this.gunImage.src =`./image/gun.png`
+        this.wormImage.src =`./game/image/soldie${this.team}.png`
+        this.gunImage.src =`./game/image/gun.png`
         
         this.drawWorm()
     }
@@ -704,7 +704,7 @@ class Bullet extends Component{
     }
 
     drawBullet = () =>{
-        this.bulletImage.src ='./image/grenade.png'
+        this.bulletImage.src ='./game/image/grenade.png'
         this.contex.fillStyle = 'pink'
         this.contex.drawImage(this.bulletImage,this.x,this.y,this.width,this.height);
     }
@@ -721,7 +721,7 @@ document.getElementById('game-board').appendChild(globalCanvas);
 const globalContex1 = globalCanvas.getContext('2d');
 
 let startImage = new Image()
-startImage.src = './image/telaStart.jpg'
+startImage.src = './game/image/telaStart.jpg'
 startImage.onload = () =>{
     globalContex1.drawImage(startImage,0,0,globalCanvas.width,globalCanvas.height);
     globalContex1.fillStyle = "#FF3901"
